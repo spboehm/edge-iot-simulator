@@ -1,0 +1,45 @@
+<!doctype html>
+<title>IoT Simulator Dashboard</title>
+<body>
+<h1>Temperature Service</h1>
+<h2>Edge</h2>
+<p>Timestamp: {{ TemperatureMeasurement.timestamp }} </p>
+<p>Value: {{ TemperatureMeasurement.value }} </p>
+<p>Unit: {{ TemperatureMeasurement.unit }}</p>
+<br />
+<form>
+    <div class="form-example">
+      <label for="name">Average Latency (10 requests):</label>
+      <input type="text" name="latency" id="latency"> <i>ms</i>
+    </div>
+</form>
+<button onclick="myFunction()">Check latency</button>
+<br />
+<script>
+    function myFunction() {
+        total_simulation_time = 0;
+        const start = Date.now();
+        const interactions = 10;
+        for (let i = 0; i < interactions; i++) {
+            const start = Date.now();
+            fetch('http://localhost:5000/temperature').then(function(response) {
+                return response.json();
+                }).then(function(data) {
+                    console.log(data);
+                }).catch(function() {
+                    console.log("An error occurred!");
+                });
+            const millis = Date.now() - start;
+            total_simulation_time = total_simulation_time + millis
+        }
+        document.getElementById('latency').value = total_simulation_time / interactions;
+    };
+</script>   
+<br />
+<br />
+<h3>MQTT Info</h3>
+<p>Host: {{ MqttStatistics.host }}</p>
+<p>Port: {{ MqttStatistics.port }}</p>
+<p>Connection status: {{ MqttStatistics.status }}</p>
+<p>Published messages: {{ MqttStatistics.message_counter }} </p>
+</body>
