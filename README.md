@@ -63,16 +63,18 @@ WEB_HOSTNAME=localhost
 
 ## Prerequisites
 
-* Make sure that you installed `python3` on your system
+* Make sure that you installed `python3, python3-venv, python3-pip` on your system
 * Make sure that you install `docker` on your system
 
 ## Run the project locally
 
-* Clone/Pull this repository
-* Go into the root directory
+* Install necessary packages: `sudo apt-get install python3-flask python3-venv python3-wheel`
+* Clone/Pull this repository: `git clone https://gitlab.rz.uni-bamberg.de/sebastian.boehm/edge-iot-simulator`
+* Go into the root directory of the repository, switch then to (`cd edge_iot_simulator`)
 * Create the env file `.env` with the contents above and change the values according to your needs
 * Create a virtual environment at first: `python3 -m venv venv`
 * Change to the virtual environment: `source venv/bin/activate`
+* Update pip: `pip3 install --upgrade pip`
 * Install the necessary dependencies: `pip3 install -r requirements.txt`
 * Change the working directory: `cd edge_iot_simulator`
 * Run:`python3 main.py`
@@ -100,7 +102,7 @@ You should see the following output:
 
 We can see the first measurements of the sensor. However, the edge-IoT simulator is terminating because no mqtt message broker is reachable.
 
-For testing purposes, start a mqtt message broker via docker: `docker run -d -p 1883:1883 -p 9001:9001 eclipse-mosquitto`
+For testing purposes, start a mqtt message broker via docker: `sudo docker run -d -p 1883:1883 -p 9001:9001 eclipse-mosquitto:1.6.15`
 
 Run the application again: `python3 main.py`
 
@@ -131,9 +133,11 @@ You should see the following output:
 
 Now the edge-IoT simulator is connected to the local mqtt message broker.
 
+Network architecture:
+
 ```bash
 -----------------------localhost----------------------
-edge-IoT simulator <-> docker <-> mqtt message broker
+edge-IoT simulator <-> docker daemon <-> mqtt message broker
 ------------------------------------------------------
 ```
 
@@ -142,8 +146,13 @@ edge-IoT simulator <-> docker <-> mqtt message broker
 To run edge-IoT simulator with docker, do the follpwing:
 
 * Change to the root directory of this repository
-* Build the image: `docker build -t edge:1.0 .`
+* Build the image: `docker build -t edge-iot-simulator:1.0 .`
 * Change the working directory to the directory: `cd edge_iot_simulator`
-* Create and adjust the `.env` file! Make sure that you take the right IP address for the message broker. If you are running the mqtt broker on the same system (physical host), obtain the broker's ip address via `docker inspect` or take the ip address of the machine (`ip a`) 
-* Run the image: `docker run -p 5000:5000 --env-file=.env edge:1.0`, choose `docker run -d -p 5000:5000 --env-file=.env edge:1.0`
+* Create and adjust the `.env` file! **Make sure that you take the right IP address for the message broker. If you are running the mqtt broker on the same system (physical host), obtain the broker's ip address via `docker inspect` **.
+* Run the image: `docker run -p 5000:5000 --env-file=.env edge-iot-simulator:1.0`, choose `docker run -d -p 5000:5000 --env-file=.env edge-iot-simulator:1.0`
 
+```bash
+-----------------------localhost----------------------
+docker daemon <-> edge-IoT-simulator <-> mqtt message broker 
+------------------------------------------------------
+```

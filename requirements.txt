@@ -15,6 +15,7 @@ pi==0.1.2
 python-dotenv==0.19.1
 python-engineio==4.3.0
 python-socketio==5.4.1
+wheel==0.37.0 
 Werkzeug==2.0.2
 zope.event==4.5.0
 zope.interface==5.4.0
