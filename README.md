@@ -72,7 +72,8 @@ WEB_HOSTNAME=localhost
 * Clone/Pull this repository: `git clone https://gitlab.rz.uni-bamberg.de/sebastian.boehm/edge-iot-simulator`
 * Go into the root directory of the repository, switch then to (`cd edge_iot_simulator`)
 * Create the env file `.env` with the contents above and change the values according to your needs
-* Create a virtual environment at first: `python3 -m venv venv`
+* Go back to the root directory of the repository: `cd ..`
+* Create a virtual environment: `python3 -m venv venv`
 * Change to the virtual environment: `source venv/bin/activate`
 * Update pip: `pip3 install --upgrade pip`
 * Install the necessary dependencies: `pip3 install -r requirements.txt`
