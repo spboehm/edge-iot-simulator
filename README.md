@@ -133,6 +133,7 @@ You should see the following output:
 ```
 
 Now the edge-IoT simulator is connected to the local mqtt message broker.
+Press `CTRL+C` to abort the program.
 
 Network architecture:
 
@@ -147,10 +148,10 @@ edge-IoT simulator <-> docker daemon <-> mqtt message broker
 To run edge-IoT simulator with docker, do the follpwing:
 
 * Change to the root directory of this repository
-* Build the image: `docker build -t edge-iot-simulator:1.0 .`
+* Build the image: `sudo docker build -t edge-iot-simulator:1.0 .`
 * Change the working directory to the directory: `cd edge_iot_simulator`
-* Create and adjust the `.env` file! **Make sure that you take the right IP address for the message broker. If you are running the mqtt broker on the same system (physical host), obtain the broker's ip address via `docker inspect`**.
-* Run the image: `docker run -p 5000:5000 --env-file=.env edge-iot-simulator:1.0`, choose `docker run -d -p 5000:5000 --env-file=.env edge-iot-simulator:1.0`
+* Create and adjust the `.env` file! **Make sure that you take the right IP address for the message broker. If you are running the mqtt broker on the same system (physical host), obtain the broker's ip address via `sudo docker inspect <containername>`**.
+* Run the image: `sudo docker run -p 5000:5000 --env-file=.env edge-iot-simulator:1.0`, choose `sudo docker run -d -p 5000:5000 --env-file=.env edge-iot-simulator:1.0`
 
 ```bash
 -----------------------localhost----------------------
