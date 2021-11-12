@@ -30,7 +30,7 @@ if __name__=="__main__":
         publisher.start()
         temperature_svc.start()
         web_app.start()
-        time.sleep(10) # wait for connection to mqtt broker
+        time.sleep(5) # wait for connection to mqtt broker
         if(publisher.get_mqtt_statistics().status == MqttStatus.disconnected.name):
             raise Exception("Could not establish the connection to the mqtt broker")
         signal.pause()

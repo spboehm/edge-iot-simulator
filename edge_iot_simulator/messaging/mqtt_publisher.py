@@ -49,8 +49,7 @@ class MqttPublisher(threading.Thread):
                 mqtt_message = self.queue.get()
                 if (os.getenv('MQTT_TOPIC_PUBLISHER')+'/'+os.getenv('MQTT_CLIENT_ID')+'/'+os.getenv('MQTT_TOPIC_PUBLISHER_STATE')):
                     if (mqtt_message.payload == "stopped"):
-                        retries = 5
-                        break
+                        return
                     else:
                         topic = mqtt_message.topic
                         payload = mqtt_message.payload
@@ -62,8 +61,6 @@ class MqttPublisher(threading.Thread):
                                 logger.info("Successfully published message {}".format(payload.to_string()))
         except Exception as e:
             self.logger.error('Error establishing connection to {}:{}'.format(os.getenv('MQTT_SERVER_NAME'),os.getenv('MQTT_PORT')) + str(e))
-        finally:
-            self.stop()
 
     def get_status(self):
         if (self.client.is_connected()):
