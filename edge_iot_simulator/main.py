@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 from core.temperature_svc import TemperatureMeasurement, TemperatureService,TemperatureUnits
 from messaging.mqtt_publisher import MqttException, MqttPublisher, MqttStatus
 from web.app import WebApp
@@ -32,7 +31,7 @@ if __name__=="__main__":
         web_app.start()
         time.sleep(5) # wait for connection to mqtt broker
         if(publisher.get_mqtt_statistics().status == MqttStatus.disconnected.name):
-            raise Exception("Could not establish the connection to the mqtt broker")
+            raise Exception("Could not establish the connection to the mqtt broker...")
         signal.pause()
     except KeyboardInterrupt as e:
         logging.info("Received user's shutdown signal...")

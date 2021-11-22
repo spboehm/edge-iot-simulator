@@ -27,7 +27,7 @@ class MqttPublisher(threading.Thread):
     def init_mqtt(self):
         client = mqtt.Client(client_id=os.getenv('MQTT_CLIENT_ID'), clean_session=False)
         if (os.getenv('MQTT_USERNAME') is not None and os.getenv('MQTT_PASSWORD') is not None):
-            client.username_pw_set(username=os.getenv('mosquitto_username'), password=os.getenv('mosquitto_password'))
+            client.username_pw_set(username=os.getenv('MQTT_USERNAME'), password=os.getenv('MQTT_PASSWORD'))
         if(os.getenv('MQTT_TLS') == 'True'):
             ca_certs = os.getenv('MQTT_CA_CERTS') if os.getenv('MQTT_CA_CERTS') is not None else None
             certfile = os.getenv('MQTT_CERTFILE') if os.getenv('MQTT_CERTFILE') is not None else None
@@ -35,11 +35,12 @@ class MqttPublisher(threading.Thread):
             cert_reqs = ssl.CERT_REQUIRED if os.getenv('MQTT_CERT_REQ') == 'True' else ssl.CERT_OPTIONAL
 
             client.tls_set(ca_certs=ca_certs, certfile=certfile, keyfile=keyfile, cert_reqs=cert_reqs, tls_version=ssl.PROTOCOL_TLSv1_2)
-            
+
             if (os.getenv('MQTT_TLS_INSECURE') == 'True'):
                 client.tls_insecure_set(True)
         client.on_connect = self.on_connect
         client.on_disconnect = self.on_disconnect
+        client.on_publish = self.on_publish
         client.reconnect_delay_set(min_delay=1, max_delay=3600)
 
         return client
@@ -51,11 +52,17 @@ class MqttPublisher(threading.Thread):
         if (rc != 0):
            self.logger.error('Unexpected disconnect: ' + str(rc))
 
+    def on_publish(self, client, userdata, mid):
+        with self.lock:
+            self.mqtt_message_counter += 1
+        self.logger.info("Successfully published message {}".format(str(mid)))
+
     def run(self):
         self.logger.debug("Successfully started mqtt publisher...")
         try:
             self.client.connect(os.getenv('MQTT_SERVER_NAME'), int(os.getenv('MQTT_PORT')))
             self.client.loop_start()
+            
             while not self.exit_event.is_set():
                 mqtt_message = self.queue.get()
                 if (os.getenv('MQTT_TOPIC_PUBLISHER')+'/'+os.getenv('MQTT_CLIENT_ID')+'/'+os.getenv('MQTT_TOPIC_PUBLISHER_STATE')):
@@ -64,14 +71,10 @@ class MqttPublisher(threading.Thread):
                     else:
                         topic = mqtt_message.topic
                         payload = mqtt_message.payload
-                        mqtt_message_info = self.client.publish(topic, json.dumps(payload.to_json()), int(os.getenv('MQTT_PUBLISH_QOS')))
-                        mqtt_message_info.wait_for_publish()
-                        if (mqtt_message_info.is_published()):
-                            with self.lock:
-                                self.mqtt_message_counter += 1
-                                logger.info("Successfully published message {}".format(payload.to_string()))
+                        self.client.publish(topic, json.dumps(payload.to_json()), int(os.getenv('MQTT_PUBLISH_QOS')))
+                        
         except Exception as e:
-            self.logger.error('Error establishing connection to {}:{}'.format(os.getenv('MQTT_SERVER_NAME'),os.getenv('MQTT_PORT')) + str(e))
+            self.logger.error('Error establishing connection to {}:{}, {}'.format(os.getenv('MQTT_SERVER_NAME'),os.getenv('MQTT_PORT'),str(e)))
 
     def get_status(self):
         if (self.client.is_connected()):
