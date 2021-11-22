@@ -33,9 +33,11 @@ class MqttPublisher(threading.Thread):
             certfile = os.getenv('MQTT_CERTFILE') if os.getenv('MQTT_CERTFILE') is not None else None
             keyfile = os.getenv('MQTT_KEYFILE') if os.getenv('MQTT_KEYFILE') is not None else None
             cert_reqs = ssl.CERT_REQUIRED if os.getenv('MQTT_CERT_REQ') == 'True' else ssl.CERT_OPTIONAL
-            client.tls_set(ca_certs=ca_certs, certfile=certfile, keyfile=keyfile, cert_reqs=cert_reqs, tls_version=TLSVersion.TLSv1_2)
-        if (os.getenv('MQTT_TLS_INSECURE') == 'True'):
-            client.tls_insecure_set(True)
+
+            client.tls_set(ca_certs=ca_certs, certfile=certfile, keyfile=keyfile, cert_reqs=cert_reqs, tls_version=ssl.PROTOCOL_TLSv1_2)
+            
+            if (os.getenv('MQTT_TLS_INSECURE') == 'True'):
+                client.tls_insecure_set(True)
         client.on_connect = self.on_connect
         client.on_disconnect = self.on_disconnect
         client.reconnect_delay_set(min_delay=1, max_delay=3600)
