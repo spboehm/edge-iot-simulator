@@ -1,4 +1,6 @@
 from enum import Enum
+from ssl import TLSVersion
+from typing import KeysView
 import paho.mqtt.client as mqtt
 import logging
 import threading
@@ -6,6 +8,7 @@ import os
 import json
 import time
 import copy
+import ssl
 
 logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -26,7 +29,13 @@ class MqttPublisher(threading.Thread):
         if (os.getenv('MQTT_USERNAME') is not None and os.getenv('MQTT_PASSWORD') is not None):
             client.username_pw_set(username=os.getenv('mosquitto_username'), password=os.getenv('mosquitto_password'))
         if(os.getenv('MQTT_TLS') == 'True'):
-            client.tls_set()
+            ca_certs = os.getenv('MQTT_CA_CERTS') if os.getenv('MQTT_CA_CERTS') is not None else None
+            certfile = os.getenv('MQTT_CERTFILE') if os.getenv('MQTT_CERTFILE') is not None else None
+            keyfile = os.getenv('MQTT_KEYFILE') if os.getenv('MQTT_KEYFILE') is not None else None
+            cert_reqs = ssl.CERT_REQUIRED if os.getenv('MQTT_CERT_REQ') == 'True' else ssl.CERT_OPTIONAL
+            client.tls_set(ca_certs=ca_certs, certfile=certfile, keyfile=keyfile, cert_reqs=cert_reqs, tls_version=TLSVersion.TLSv1_2)
+        if (os.getenv('MQTT_TLS_INSECURE') == 'True'):
+            client.tls_insecure_set(True)
         client.on_connect = self.on_connect
         client.on_disconnect = self.on_disconnect
         client.reconnect_delay_set(min_delay=1, max_delay=3600)

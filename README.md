@@ -44,6 +44,7 @@ All components can easily be configured with the following `.env` file with shou
 MQTT_SERVER_NAME=localhost
 MQTT_PORT=1883
 MQTT_TLS=false
+MQTT_TLS_CERT_PATH=
 MQTT_USERNAME=
 MQTT_PASSWORD=
 MQTT_MAX_CONNECT_RETRIES=5
