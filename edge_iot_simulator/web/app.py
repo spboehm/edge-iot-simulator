@@ -8,15 +8,15 @@ logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/
 
 class WebApp(threading.Thread):
 
-    def __init__(self, publisher, temperature_svc):
+    def __init__(self, publisher, temperature_svc, cpu_load_svc):
         threading.Thread.__init__(self)
-        app = self.create_app(publisher, temperature_svc)
+        app = self.create_app(publisher, temperature_svc, cpu_load_svc)
         self.srv = make_server('0.0.0.0', 5000, app)
         self.ctx = app.app_context()
         self.ctx.push()
         self.logger = logging.getLogger(__name__)
 
-    def create_app(self, publisher, temperature_svc):
+    def create_app(self, publisher, temperature_svc, cpu_load_svc):
         app = Flask(__name__)
 
         @app.route("/")
@@ -27,12 +27,20 @@ class WebApp(threading.Thread):
         def get_temperature():
             return temperature_svc.get_temperature(TemperatureUnits.celsius.name).to_string()
 
+        @app.route("/cpu-load")
+        def get_cpu_load():
+            return render_template('cpu-load.html', CPULoadJobHistory=cpu_load_svc.get_cpu_load_job_history())
+        
+        @app.route("/cpu-load/<id>", methods=["DELETE"])
+        def terminate_cpu_load_job(id):
+            cpu_load_svc.delete_cpu_load_job_by_id(id)
+            return render_template('cpu-load.html', CPULoadJobHistory=cpu_load_svc.get_cpu_load_job_history())
+
         return app
 
     def run(self):
         self.logger.info('Successfully started WebApp...')
         self.srv.serve_forever()
-
 
     def stop(self):
         self.logger.info('WebApp received shutdown signal....')

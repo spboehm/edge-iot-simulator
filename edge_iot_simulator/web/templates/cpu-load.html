@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
+    <title>Hello, world!</title>
+  </head>
+  <body>
+    <div class="container-md">
+      <div class="row gy-5">
+        <div class="col">
+          <h2>Create new cpu load job</h2>
+          <p>Create a new job by stating the desired duration and load</p>
+          <form>
+            <div class="mb-3">
+              <label for="loadValue" class="form-label">Load</label>
+              <input type="range" class="form-range" min="0.25" max="0.75" step="0.10" id="loadValue" value=0.5>
+              <div id="currentLoadValue" class="form-text"></div>
+            </div>
+            <div class="mb-3">
+              <label for="durationValue" class="form-label">Duration</label>
+              <input type="range" class="form-range" min="30" max="3600" step="10" id="durationValue" value=60>
+              <div id="currentDurationValue" class="form-text"></div>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+          </form>
+        </div>
+      </div>
+      <div class="row gy-5">
+        <div class="col">
+        <h2>Job History</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">id</th>
+              <th scope="col">pid</th>
+              <th scope="col">target load</th>
+              <th scope="col">duration</th>
+              <th scope="col">state</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for key, value in CPULoadJobHistory.items() %}
+              <tr>
+                <td>{{key}}</td>
+                <td>{{value.pid}}</td>
+                <td>{{value.target_load}}</td>
+                <td>{{value.duration}}</td>
+                <td>{{value.state}}</td>
+                <td><button id={{key}} type="button" class="btn btn-danger"></button></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <script>
+      $(document).ready(function() {
+        currentLoadValue()
+        currentDurationValue()
+        deleteCPULoadJob()
+      });
+
+      $("#loadValue").click(function () {
+        currentLoadValue()
+      });
+
+      $("#durationValue").click(function () {
+        currentDurationValue()
+      });
+
+      function currentLoadValue() {
+        $("#currentLoadValue").text("Current Load: " + $("#loadValue").val() + " / " + Math.round(($("#loadValue").val()*100 * 100)/100) + "%"); 
+      }
+
+      function currentDurationValue() {
+        $("#currentDurationValue").text("Current Duration: " + $("#durationValue").val() + " seconds" + " / " + Math.round(($("#durationValue").val()/60) * 100)/100 + " minutes");
+      }
+      
+      function deleteCPULoadJob() {
+        $(".btn-danger").click(function(e) {
+          e.preventDefault();
+          console.log(e.target.id)
+          $.ajax({
+            url: '/cpu-load' + '/' + e.target.id,
+            type: 'DELETE',
+            success: function(result) {
+              console.log('ok')
+            }
+          });
+          
+        })
+      };
+
+    </script>
+  </body>
+</html>

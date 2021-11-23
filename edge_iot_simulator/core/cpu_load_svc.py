@@ -1,6 +1,7 @@
 from enum import Enum
 import json
 import logging
+import copy
 import multiprocessing
 from multiprocessing import process
 import os
@@ -66,6 +67,11 @@ class CPULoadService(threading.Thread):
             else:
                 self.logger.error('Unknown message received!')
 
+            with self.lock:
+                if self.CPULoadJobHistory[new_queued_cpu_load_job_all_cores.id].state == CPULoadJobStates.ABORTED.name:
+                    self.logger.debug('Received aborted job: {}'.format(self.CPULoadJobHistory[new_queued_cpu_load_job_all_cores.id]))
+                    continue 
+
             self.proc = multiprocessing.Process(target=load_all_cores, args=(new_queued_cpu_load_job_all_cores.duration, new_queued_cpu_load_job_all_cores.target_load))
             self.proc.start()
             current_pid = self.proc.pid
@@ -98,15 +104,36 @@ class CPULoadService(threading.Thread):
 
     def stop(self):
         self.logger.info('CPU load service received shutdown signal...')
+
+        while not self.consumer_queue.empty():
+            self.consumer_queue.get()
+        self.consumer_queue.put('shutdown')
+
+        while not self.CPULoadJobQueue.empty():
+            self.CPULoadJobQueue.get()
+        self.CPULoadJobQueue.put('shutdown')
+
+        self.exit_event.set()
+
         if self.proc is not None and self.proc.pid > 0 and self.proc.is_alive():
             self.stop_current_CPULoadJob()
-        self.exit_event.set()
-        self.consumer_queue.put('shutdown')
-        self.CPULoadJobQueue.put('shutdown')
+        
         self.CPULoadJobRunner.join()
         if (self.lock.locked()):
             self.lock.release()
 
+    def get_cpu_load_job_history(self):
+        with self.lock:
+            return copy.deepcopy(self.CPULoadJobHistory)
+
+    def delete_cpu_load_job_by_id(self, id):
+        id = int(id)
+        with self.lock:
+            if id in self.CPULoadJobHistory:
+                if self.CPULoadJobHistory[id].state == CPULoadJobStates.RUNNING.name:
+                    self.stop_current_CPULoadJob()
+                self.CPULoadJobHistory[id].state = CPULoadJobStates.ABORTED.name
+                
 
 class CPULoadJobAllCores():
 
