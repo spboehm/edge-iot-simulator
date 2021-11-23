@@ -16,15 +16,15 @@
         <div class="col">
           <h2>Create new cpu load job</h2>
           <p>Create a new job by stating the desired duration and load</p>
-          <form>
+          <form method="POST" action="/cpu-load">
             <div class="mb-3">
               <label for="loadValue" class="form-label">Load</label>
-              <input type="range" class="form-range" min="0.25" max="0.75" step="0.10" id="loadValue" value=0.5>
+              <input type="range" class="form-range" min="0.25" max="0.75" step="0.10" id="loadValue" name="target_load" value=0.5>
               <div id="currentLoadValue" class="form-text"></div>
             </div>
             <div class="mb-3">
               <label for="durationValue" class="form-label">Duration</label>
-              <input type="range" class="form-range" min="30" max="3600" step="10" id="durationValue" value=60>
+              <input type="range" class="form-range" min="30" max="3600" step="10" id="durationValue" name="duration" value=60>
               <div id="currentDurationValue" class="form-text"></div>
             </div>
             <button type="submit" class="btn btn-primary">Submit</button>
@@ -39,9 +39,10 @@
             <tr>
               <th scope="col">id</th>
               <th scope="col">pid</th>
-              <th scope="col">target load</th>
               <th scope="col">duration</th>
+              <th scope="col">target load</th>
               <th scope="col">state</th>
+              <th scope="col">action</th>
             </tr>
           </thead>
           <tbody>
@@ -49,8 +50,8 @@
               <tr>
                 <td>{{key}}</td>
                 <td>{{value.pid}}</td>
-                <td>{{value.target_load}}</td>
                 <td>{{value.duration}}</td>
+                <td>{{value.target_load}}</td>
                 <td>{{value.state}}</td>
                 <td><button id={{key}} type="button" class="btn btn-danger"></button></td>
               </tr>
@@ -90,12 +91,11 @@
       function deleteCPULoadJob() {
         $(".btn-danger").click(function(e) {
           e.preventDefault();
-          console.log(e.target.id)
           $.ajax({
             url: '/cpu-load' + '/' + e.target.id,
             type: 'DELETE',
             success: function(result) {
-              console.log('ok')
+              location.reload()
             }
           });
           

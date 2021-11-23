@@ -1,6 +1,6 @@
 import threading
 import logging
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect, url_for, request, Response
 from werkzeug.serving import make_server
 from core.temperature_svc import TemperatureUnits
 
@@ -26,15 +26,21 @@ class WebApp(threading.Thread):
         @app.route("/temperature")
         def get_temperature():
             return temperature_svc.get_temperature(TemperatureUnits.celsius.name).to_string()
+        
+        @app.route("/cpu-load", methods=["POST"])
+        def create_cpu_load_job():
+            form_data = request.form
+            cpu_load_svc.create_cpu_load_job(int(form_data.get('duration')), float(form_data.get('target_load')))
+            return redirect('/cpu-load')
 
-        @app.route("/cpu-load")
+        @app.route("/cpu-load", methods=["GET"])
         def get_cpu_load():
             return render_template('cpu-load.html', CPULoadJobHistory=cpu_load_svc.get_cpu_load_job_history())
         
         @app.route("/cpu-load/<id>", methods=["DELETE"])
         def terminate_cpu_load_job(id):
             cpu_load_svc.delete_cpu_load_job_by_id(id)
-            return render_template('cpu-load.html', CPULoadJobHistory=cpu_load_svc.get_cpu_load_job_history())
+            return Response(status=200)
 
         return app
 

@@ -20,7 +20,7 @@ class CPULoadService(threading.Thread):
     def __init__(self, consumer_queue):
         threading.Thread.__init__(self)
         self.consumer_queue = consumer_queue
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self.exit_event = threading.Event()
         self.logger = logging.getLogger(__name__)
         self.proc = None
@@ -58,7 +58,6 @@ class CPULoadService(threading.Thread):
             self.logger.debug('CPULoadJobRunner is waiting for incoming jobs...')
             item = self.CPULoadJobQueue.get()
 
-            new_queued_cpu_load_job_all_cores = None
             if (isinstance(item, QueuedCPULoadJobAllCores)):
                 new_queued_cpu_load_job_all_cores = item
                 self.logger.info('Received new QueuedCPULoadJobAllCores: {}'.format(new_queued_cpu_load_job_all_cores.to_string()))            
@@ -69,7 +68,7 @@ class CPULoadService(threading.Thread):
 
             with self.lock:
                 if self.CPULoadJobHistory[new_queued_cpu_load_job_all_cores.id].state == CPULoadJobStates.ABORTED.name:
-                    self.logger.debug('Received aborted job: {}'.format(self.CPULoadJobHistory[new_queued_cpu_load_job_all_cores.id]))
+                    self.logger.debug('Received already aborted job: {}'.format(self.CPULoadJobHistory[new_queued_cpu_load_job_all_cores.id]))
                     continue 
 
             self.proc = multiprocessing.Process(target=load_all_cores, args=(new_queued_cpu_load_job_all_cores.duration, new_queued_cpu_load_job_all_cores.target_load))
@@ -87,7 +86,7 @@ class CPULoadService(threading.Thread):
                     self.logger.info('{} QueuedCPULoadJobAllCores {}'.format(self.CPULoadJobHistory[self.current_job_id].state, queued_cpu_load_job_all_cores.to_string()))
 
     def stop_current_CPULoadJob(self):
-        if self.proc is not None and self.proc.pid > 0:
+        if self.proc is not None and self.proc.pid > 0 and self.proc.is_alive():
             self.logger.info('Stop current CPULoadJob with parent pid {}'.format(self.proc.pid))
             with self.lock:
                 self.CPULoadJobHistory[self.current_job_id].state = CPULoadJobStates.ABORTED.name
@@ -119,8 +118,10 @@ class CPULoadService(threading.Thread):
             self.stop_current_CPULoadJob()
         
         self.CPULoadJobRunner.join()
-        if (self.lock.locked()):
-            self.lock.release()
+
+    def create_cpu_load_job(self, duration, target_load):
+        new_cpu_load_job_all_cores = CPULoadJobAllCores(duration, target_load)
+        self.consumer_queue.put(new_cpu_load_job_all_cores)
 
     def get_cpu_load_job_history(self):
         with self.lock:
@@ -129,7 +130,7 @@ class CPULoadService(threading.Thread):
     def delete_cpu_load_job_by_id(self, id):
         id = int(id)
         with self.lock:
-            if id in self.CPULoadJobHistory:
+            if id in self.CPULoadJobHistory and self.proc is not None and self.proc.is_alive():
                 if self.CPULoadJobHistory[id].state == CPULoadJobStates.RUNNING.name:
                     self.stop_current_CPULoadJob()
                 self.CPULoadJobHistory[id].state = CPULoadJobStates.ABORTED.name
