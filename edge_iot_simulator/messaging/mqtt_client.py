@@ -144,8 +144,8 @@ class MessageBroker(threading.Thread):
                         created_cpu_load_job = self.cpu_load_svc.create_cpu_load_job(json_cpu_load_job_all_cores['duration'], json_cpu_load_job_all_cores['target_load'])
                         self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_create_res, MqttSuccessMessage(created_cpu_load_job)))
 
-                except (ValueError, JSONDecodeError) as e:
-                    error_message = 'Illegal message received: ' + str(e.args)
+                except (ValueError, JSONDecodeError, KeyError) as e:
+                    error_message = 'Illegal message received: ' + str(e)
                     self.logger.error(error_message)
                     self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_read_res, MqttErrorMessage(error_message)))
 
