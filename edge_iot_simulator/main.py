@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from core.temperature_svc import TemperatureMeasurement, TemperatureService,TemperatureUnits
 from core.cpu_load_svc import CPULoadJobAllCores, CPULoadService
-from messaging.mqtt_publisher import MqttException, MqttPublisher, MqttStatus, MessageBroker
+from messaging.mqtt_client import MqttException, MqttClient, MqttStatus, MessageBroker
 from web.app import WebApp
 
 import logging
@@ -22,11 +22,11 @@ if __name__=="__main__":
     publisher_queue = queue.Queue()
     consumer_queue = queue.Queue()
 
-    publisher = MqttPublisher(publisher_queue, consumer_queue)
+    publisher = MqttClient(publisher_queue, consumer_queue)
     temperature_svc = TemperatureService(publisher_queue, 3, TemperatureUnits.celsius.name)
     cpu_load_svc = CPULoadService(publisher_queue)
     web_app = WebApp(publisher, temperature_svc, cpu_load_svc)
-    message_broker = MessageBroker(consumer_queue, cpu_load_svc)
+    message_broker = MessageBroker(consumer_queue, publisher_queue, cpu_load_svc)
 
     try:
         logging.info('Please press any key to interrupt...')
@@ -38,12 +38,6 @@ if __name__=="__main__":
         time.sleep(5) # wait for connection to mqtt broker
         if(publisher.get_mqtt_statistics().status == MqttStatus.disconnected.name):
             raise Exception("Could not establish the connection to the mqtt broker...") 
-
-        time.sleep(1)
-        # consumer_queue.put(CPULoadJobAllCores(5000, 0.10))
-        # consumer_queue.put(CPULoadJobAllCores(20, 0.30))
-        # consumer_queue.put(CPULoadJobAllCores(35, 0.40))
-
         signal.pause()
     except KeyboardInterrupt as e:
         logging.info("Received user's shutdown signal...")

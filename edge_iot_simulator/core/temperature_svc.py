@@ -7,7 +7,7 @@ import copy
 import logging
 import os
 
-from messaging.mqtt_publisher import MqttMessage
+from messaging.mqtt_client import MqttMessage
 logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 
 class TemperatureService(threading.Thread):

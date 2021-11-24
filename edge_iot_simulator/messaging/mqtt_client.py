@@ -10,12 +10,12 @@ import json
 import time
 import copy
 import ssl
-from settings import create_cpu_load_svc_req_topic
+from settings import create_cpu_load_svc_req_topic, read_cpu_load_svc_req_topic, read_cpu_load_svc_res_topic
 
 logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-class MqttPublisher(threading.Thread):
+class MqttClient(threading.Thread):
 
     def __init__(self, queue, consumer_queue):
         threading.Thread.__init__(self)
@@ -54,6 +54,7 @@ class MqttPublisher(threading.Thread):
         
         self.logger.info("Subscribe to topics...")
         self.client.subscribe(create_cpu_load_svc_req_topic, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
+        self.client.subscribe(read_cpu_load_svc_req_topic, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
 
     def on_disconnect(self, client, userdata, rc):
         if (rc != 0):
@@ -83,7 +84,6 @@ class MqttPublisher(threading.Thread):
                         topic = mqtt_message.topic
                         payload = mqtt_message.payload
                         self.client.publish(topic, json.dumps(payload.to_json()), int(os.getenv('MQTT_PUBLISH_QOS')))
-                        
         except Exception as e:
             self.logger.error('Error establishing connection to {}:{}, {}'.format(os.getenv('MQTT_SERVER_NAME'),os.getenv('MQTT_PORT'),str(e)))
 
@@ -111,18 +111,20 @@ class MqttPublisher(threading.Thread):
 
 class MessageBroker(threading.Thread):
 
-    def __init__(self, consumer_queue, cpu_load_svc):
+    def __init__(self, consumer_queue, publisher_queue, cpu_load_svc):
         threading.Thread.__init__(self)
         self.logger = logging.getLogger(__name__)
         self.consumer_queue = consumer_queue
         self.lock = threading.Lock()
         self.exit_event = threading.Event()
         self.cpu_load_svc = cpu_load_svc
+        self.publisher_queue = publisher_queue
 
     def run(self):
         while not self.exit_event.is_set():
             item = self.consumer_queue.get()
 
+            mqtt_message = None
             if (isinstance(item, MqttMessage)):
                 mqtt_message = item
             elif (item == 'shutdown'):
@@ -130,8 +132,8 @@ class MessageBroker(threading.Thread):
             else:
                 self.logger.error('Unknown message received!')
 
-            if (item.topic == create_cpu_load_svc_req_topic):
-                json_cpu_load_job_all_cores= json.loads(item.payload.decode())
+            if (mqtt_message.topic == create_cpu_load_svc_req_topic):
+                json_cpu_load_job_all_cores= json.loads(mqtt_message.payload.decode())
 
                 try:
                     if (json_cpu_load_job_all_cores['duration'] is None):
@@ -143,7 +145,11 @@ class MessageBroker(threading.Thread):
                 except ValueError as e:
                     self.logger.error('Illegal message received: ' + str(e.args))
                     # TODO: add reply message
-    
+            elif (mqtt_message.topic == read_cpu_load_svc_req_topic):
+                # omit payload by default
+                current_cpu_load_job_all_cores = self.cpu_load_svc.get_current_cpu_load_job_all_cores()
+                self.publisher_queue.put(MqttMessage(read_cpu_load_svc_res_topic, current_cpu_load_job_all_cores))
+
     def stop(self):
         self.logger.info('Message broker received shutdown signal...')
 

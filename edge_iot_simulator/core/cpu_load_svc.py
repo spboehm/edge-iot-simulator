@@ -12,7 +12,7 @@ import time
 import psutil
 import queue
 from cpu_load_generator import load_single_core, load_all_cores, from_profile
-from messaging.mqtt_publisher import MqttMessage
+from messaging.mqtt_client import MqttMessage
 
 logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 
@@ -122,20 +122,30 @@ class CPULoadService(threading.Thread):
         self.CPULoadJobRunner.join()
 
     def create_cpu_load_job(self, duration, target_load):
-        if not duration.isnumeric():
+        if isinstance(duration, str) and not duration.isnumeric():
             raise ValueError("Duration must be numeric!")
         
-        if not target_load.isnumeric():
+        if isinstance(target_load, str) and not target_load.isnumeric():
             raise ValueError("target_load must be numeric")
        
         # TODO: add further checks
 
-        new_cpu_load_job_all_cores = CPULoadJobAllCores(duration, target_load)
+        new_cpu_load_job_all_cores = CPULoadJobAllCores(int(duration), int(target_load))
         self.input_queue.put(new_cpu_load_job_all_cores)
 
     def get_cpu_load_job_history(self):
         with self.lock:
             return copy.deepcopy(self.CPULoadJobHistory)
+
+    def get_cpu_load_job_all_cores_by_id(self, id):
+        id = int(id)
+        with self.lock:
+            return copy.deepcopy(self.CPULoadJobHistory[id])
+
+    def get_current_cpu_load_job_all_cores(self):
+        with self.lock:
+            if (self.CPULoadJobHistory and self.proc is not None and self.proc.is_alive()):
+                return self.get_cpu_load_job_all_cores_by_id(self.current_job_id)
 
     def delete_cpu_load_job_by_id(self, id):
         id = int(id)
