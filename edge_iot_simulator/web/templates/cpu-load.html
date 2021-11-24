@@ -11,9 +11,10 @@
     <title>Hello, world!</title>
   </head>
   <body>
-    <div class="container-md">
-      <div class="row gy-5">
+    <div class="container px-4">
+      <div class="row gx-5">
         <div class="col">
+          <div class="p-3 border">
           <h2>Create new cpu load job</h2>
           <p>Create a new job by stating the desired duration and load</p>
           <form method="POST" action="/cpu-load">
@@ -27,38 +28,40 @@
               <input type="range" class="form-range" min="30" max="3600" step="10" id="durationValue" name="duration" value=60>
               <div id="currentDurationValue" class="form-text"></div>
             </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
+            <button type="submit" class="btn btn-primary">Create</button>
           </form>
+          </div>
         </div>
       </div>
-      <div class="row gy-5">
-        <div class="col">
-        <h2>Job History</h2>
-        <table class="table">
-          <thead>
+      <div class="col">
+      <div class="p-3 border">
+      <h2>Job History</h2>
+      <p>Manage cpu load jobs</p>
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">id</th>
+            <th scope="col">pid</th>
+            <th scope="col">duration</th>
+            <th scope="col">target load</th>
+            <th scope="col">state</th>
+            <th scope="col">action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for key, value in CPULoadJobHistory.items() %}
             <tr>
-              <th scope="col">id</th>
-              <th scope="col">pid</th>
-              <th scope="col">duration</th>
-              <th scope="col">target load</th>
-              <th scope="col">state</th>
-              <th scope="col">action</th>
+              <td>{{key}}</td>
+              <td>{{value.pid}}</td>
+              <td>{{value.duration}}</td>
+              <td>{{value.target_load}}</td>
+              <td>{{value.state}}</td>
+              <td><button id={{key}} type="button" class="btn btn-danger btn-sm">Abort</button></td>
             </tr>
-          </thead>
-          <tbody>
-            {% for key, value in CPULoadJobHistory.items() %}
-              <tr>
-                <td>{{key}}</td>
-                <td>{{value.pid}}</td>
-                <td>{{value.duration}}</td>
-                <td>{{value.target_load}}</td>
-                <td>{{value.state}}</td>
-                <td><button id={{key}} type="button" class="btn btn-danger"></button></td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        </div>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
       </div>
     </div>
 

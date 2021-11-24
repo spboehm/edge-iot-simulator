@@ -1,4 +1,5 @@
 from enum import Enum
+from multiprocessing.sharedctypes import Value
 from ssl import TLSVersion
 from typing import KeysView
 import paho.mqtt.client as mqtt
@@ -9,18 +10,20 @@ import json
 import time
 import copy
 import ssl
+from settings import create_cpu_load_svc_req_topic
 
 logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 class MqttPublisher(threading.Thread):
 
-    def __init__(self, queue):
+    def __init__(self, queue, consumer_queue):
         threading.Thread.__init__(self)
         self.logger = logging.getLogger(__name__)
         self.lock = threading.Lock()
         self.exit_event = threading.Event()
         self.queue = queue
+        self.consumer_queue = consumer_queue
         self.client = self.init_mqtt()
         self.mqtt_message_counter = 0
 
@@ -41,12 +44,16 @@ class MqttPublisher(threading.Thread):
         client.on_connect = self.on_connect
         client.on_disconnect = self.on_disconnect
         client.on_publish = self.on_publish
+        client.on_message = self.on_message
         client.reconnect_delay_set(min_delay=1, max_delay=3600)
 
         return client
 
     def on_connect(self, client, userdata, flags, rc):
         self.logger.info("Publisher connected with result code " + str(rc))
+        
+        self.logger.info("Subscribe to topics...")
+        self.client.subscribe(create_cpu_load_svc_req_topic, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
 
     def on_disconnect(self, client, userdata, rc):
         if (rc != 0):
@@ -56,6 +63,10 @@ class MqttPublisher(threading.Thread):
         with self.lock:
             self.mqtt_message_counter += 1
         self.logger.info("Successfully published message {}".format(str(mid)))
+
+    def on_message(self, client, userdata, msg):
+        self.logger.info('Received new message, topic: {}, message: {}'.format(msg.topic, msg.payload))
+        self.consumer_queue.put(MqttMessage(msg.topic, msg.payload))
 
     def run(self):
         self.logger.debug("Successfully started mqtt publisher...")
@@ -97,6 +108,50 @@ class MqttPublisher(threading.Thread):
         self.queue.put(MqttMessage(os.getenv("MQTT_TOPIC_PUBLISHER")+'/'+os.getenv('MQTT_CLIENT_ID') + '/' +os.getenv('MQTT_TOPIC_PUBLISHER_STATE'), "stopped"))
         if (self.lock.locked()):
             self.lock.release()
+
+class MessageBroker(threading.Thread):
+
+    def __init__(self, consumer_queue, cpu_load_svc):
+        threading.Thread.__init__(self)
+        self.logger = logging.getLogger(__name__)
+        self.consumer_queue = consumer_queue
+        self.lock = threading.Lock()
+        self.exit_event = threading.Event()
+        self.cpu_load_svc = cpu_load_svc
+
+    def run(self):
+        while not self.exit_event.is_set():
+            item = self.consumer_queue.get()
+
+            if (isinstance(item, MqttMessage)):
+                mqtt_message = item
+            elif (item == 'shutdown'):
+                return
+            else:
+                self.logger.error('Unknown message received!')
+
+            if (item.topic == create_cpu_load_svc_req_topic):
+                json_cpu_load_job_all_cores= json.loads(item.payload.decode())
+
+                try:
+                    if (json_cpu_load_job_all_cores['duration'] is None):
+                        raise ValueError('duration is missing')
+                    elif (json_cpu_load_job_all_cores['target_load'] is None):
+                        raise ValueError('target_load is missing')
+                    else:
+                        self.cpu_load_svc.create_cpu_load_job(json_cpu_load_job_all_cores['duration'], json_cpu_load_job_all_cores['target_load'])
+                except ValueError as e:
+                    self.logger.error('Illegal message received: ' + str(e.args))
+                    # TODO: add reply message
+    
+    def stop(self):
+        self.logger.info('Message broker received shutdown signal...')
+
+        while not self.consumer_queue.empty():
+            self.consumer_queue.get()
+        self.consumer_queue.put('shutdown')
+
+        self.exit_event.set()
 
 class MqttMessage():
 

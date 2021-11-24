@@ -4,6 +4,7 @@ import logging
 import copy
 import multiprocessing
 from multiprocessing import process
+from multiprocessing.sharedctypes import Value
 import os
 import signal
 import threading
@@ -17,9 +18,10 @@ logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/
 
 class CPULoadService(threading.Thread):
 
-    def __init__(self, consumer_queue):
+    def __init__(self, publisher_queue):
         threading.Thread.__init__(self)
-        self.consumer_queue = consumer_queue
+        self.input_queue = queue.Queue()
+        self.publisher_queue = publisher_queue
         self.lock = threading.RLock()
         self.exit_event = threading.Event()
         self.logger = logging.getLogger(__name__)
@@ -35,7 +37,7 @@ class CPULoadService(threading.Thread):
         self.CPULoadJobRunner = threading.Thread(target=self.run_cpu_load_job, args=())
         self.CPULoadJobRunner.start()
         while not self.exit_event.is_set():
-            item = self.consumer_queue.get()
+            item = self.input_queue.get()
 
             new_cpu_load_job_all_cores = None
             if (isinstance(item, CPULoadJobAllCores)):
@@ -104,9 +106,9 @@ class CPULoadService(threading.Thread):
     def stop(self):
         self.logger.info('CPU load service received shutdown signal...')
 
-        while not self.consumer_queue.empty():
-            self.consumer_queue.get()
-        self.consumer_queue.put('shutdown')
+        while not self.input_queue.empty():
+            self.input_queue.get()
+        self.input_queue.put('shutdown')
 
         while not self.CPULoadJobQueue.empty():
             self.CPULoadJobQueue.get()
@@ -120,8 +122,16 @@ class CPULoadService(threading.Thread):
         self.CPULoadJobRunner.join()
 
     def create_cpu_load_job(self, duration, target_load):
+        if not duration.isnumeric():
+            raise ValueError("Duration must be numeric!")
+        
+        if not target_load.isnumeric():
+            raise ValueError("target_load must be numeric")
+       
+        # TODO: add further checks
+
         new_cpu_load_job_all_cores = CPULoadJobAllCores(duration, target_load)
-        self.consumer_queue.put(new_cpu_load_job_all_cores)
+        self.input_queue.put(new_cpu_load_job_all_cores)
 
     def get_cpu_load_job_history(self):
         with self.lock:
