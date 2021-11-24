@@ -137,6 +137,7 @@ class CPULoadService(threading.Thread):
 
         new_cpu_load_job_all_cores = CPULoadJobAllCores(int(duration), int(target_load))
         self.input_queue.put(new_cpu_load_job_all_cores)
+        return new_cpu_load_job_all_cores
 
     def get_cpu_load_job_history(self):
         with self.lock:

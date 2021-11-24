@@ -11,7 +11,7 @@ import json
 import time
 import copy
 import ssl
-from settings import topic_cpuLoadSvc_cpuLoadJob_create_req, topic_cpuLoadSvc_cpuLoadJob_read_req, topic_cpuLoadSvc_cpuLoadJob_read_res
+from settings import topic_cpuLoadSvc_cpuLoadJob_create_req, topic_cpuLoadSvc_cpuLoadJob_read_req, topic_cpuLoadSvc_cpuLoadJob_read_res, topic_cpuLoadSvc_cpuLoadJob_create_res
 
 logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -141,7 +141,9 @@ class MessageBroker(threading.Thread):
                     elif (json_cpu_load_job_all_cores['target_load'] is None):
                         raise ValueError('target_load is missing')
                     else:
-                        self.cpu_load_svc.create_cpu_load_job(json_cpu_load_job_all_cores['duration'], json_cpu_load_job_all_cores['target_load'])
+                        created_cpu_load_job = self.cpu_load_svc.create_cpu_load_job(json_cpu_load_job_all_cores['duration'], json_cpu_load_job_all_cores['target_load'])
+                        self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_create_res, MqttSuccessMessage(created_cpu_load_job)))
+
                 except (ValueError, JSONDecodeError) as e:
                     error_message = 'Illegal message received: ' + str(e.args)
                     self.logger.error(error_message)
@@ -182,6 +184,17 @@ class MqttStatistics():
         self.tls = os.getenv('MQTT_TLS')
         self.status = status
         self.message_counter = message_counter
+
+    def to_json(self):
+        return json.dumps(self.__dict__)
+
+    def to_string(self):
+        return str(self.to_json())
+
+class MqttSuccessMessage():
+
+    def __init__(self, success):
+        self.success = success
 
     def to_json(self):
         return json.dumps(self.__dict__)
