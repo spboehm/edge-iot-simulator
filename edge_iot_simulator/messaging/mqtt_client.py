@@ -1,4 +1,5 @@
 from enum import Enum
+from json.decoder import JSONDecodeError
 from multiprocessing.sharedctypes import Value
 from ssl import TLSVersion
 from typing import KeysView
@@ -10,7 +11,7 @@ import json
 import time
 import copy
 import ssl
-from settings import create_cpu_load_svc_req_topic, read_cpu_load_svc_req_topic, read_cpu_load_svc_res_topic
+from settings import topic_cpuLoadSvc_cpuLoadJob_create_req, topic_cpuLoadSvc_cpuLoadJob_read_req, topic_cpuLoadSvc_cpuLoadJob_read_res
 
 logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -53,8 +54,8 @@ class MqttClient(threading.Thread):
         self.logger.info("Publisher connected with result code " + str(rc))
         
         self.logger.info("Subscribe to topics...")
-        self.client.subscribe(create_cpu_load_svc_req_topic, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
-        self.client.subscribe(read_cpu_load_svc_req_topic, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
+        self.client.subscribe(topic_cpuLoadSvc_cpuLoadJob_create_req, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
+        self.client.subscribe(topic_cpuLoadSvc_cpuLoadJob_read_req, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
 
     def on_disconnect(self, client, userdata, rc):
         if (rc != 0):
@@ -132,23 +133,22 @@ class MessageBroker(threading.Thread):
             else:
                 self.logger.error('Unknown message received!')
 
-            if (mqtt_message.topic == create_cpu_load_svc_req_topic):
-                json_cpu_load_job_all_cores= json.loads(mqtt_message.payload.decode())
-
+            if (mqtt_message.topic == topic_cpuLoadSvc_cpuLoadJob_create_req):
                 try:
+                    json_cpu_load_job_all_cores= json.loads(mqtt_message.payload.decode())
                     if (json_cpu_load_job_all_cores['duration'] is None):
                         raise ValueError('duration is missing')
                     elif (json_cpu_load_job_all_cores['target_load'] is None):
                         raise ValueError('target_load is missing')
                     else:
                         self.cpu_load_svc.create_cpu_load_job(json_cpu_load_job_all_cores['duration'], json_cpu_load_job_all_cores['target_load'])
-                except ValueError as e:
-                    self.logger.error('Illegal message received: ' + str(e.args))
-                    # TODO: add reply message
-            elif (mqtt_message.topic == read_cpu_load_svc_req_topic):
-                # omit payload by default
-                current_cpu_load_job_all_cores = self.cpu_load_svc.get_current_cpu_load_job_all_cores()
-                self.publisher_queue.put(MqttMessage(read_cpu_load_svc_res_topic, current_cpu_load_job_all_cores))
+                except (ValueError, JSONDecodeError) as e:
+                    error_message = 'Illegal message received: ' + str(e.args)
+                    self.logger.error(error_message)
+                    self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_read_res, MqttErrorMessage(error_message)))
+
+            elif (mqtt_message.topic == topic_cpuLoadSvc_cpuLoadJob_read_req):
+                self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_read_res, self.cpu_load_svc.get_current_cpu_load_job_all_cores()))
 
     def stop(self):
         self.logger.info('Message broker received shutdown signal...')
@@ -182,6 +182,17 @@ class MqttStatistics():
         self.tls = os.getenv('MQTT_TLS')
         self.status = status
         self.message_counter = message_counter
+
+    def to_json(self):
+        return json.dumps(self.__dict__)
+
+    def to_string(self):
+        return str(self.to_json())
+
+class MqttErrorMessage():
+
+    def __init__(self, error):
+        self.error = error
 
     def to_json(self):
         return json.dumps(self.__dict__)

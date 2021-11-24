@@ -9,6 +9,7 @@ import os
 import signal
 import threading
 import time
+from typing import ValuesView
 import psutil
 import queue
 from cpu_load_generator import load_single_core, load_all_cores, from_profile
@@ -124,11 +125,15 @@ class CPULoadService(threading.Thread):
     def create_cpu_load_job(self, duration, target_load):
         if isinstance(duration, str) and not duration.isnumeric():
             raise ValueError("Duration must be numeric!")
+
+        if int(duration) < int(os.getenv('CPU_LOAD_SVC_MIN_DURATION_SECONDS')) or int(duration) > int(os.getenv('CPU_LOAD_SVC_MAX_DURATION_SECONDS')):
+            raise ValueError("Duration must be between {} and {}".format(os.getenv('CPU_LOAD_SVC_MIN_DURATION_SECONDS'),os.getenv('CPU_LOAD_SVC_MAX_DURATION_SECONDS')))
         
         if isinstance(target_load, str) and not target_load.isnumeric():
             raise ValueError("target_load must be numeric")
        
-        # TODO: add further checks
+        if float(target_load) < float(os.getenv('CPU_LOAD_SVC_MIN_TARGET_LOAD')) or float(target_load) > float(os.getenv('CPU_LOAD_SVC_MAX_TARGET_LOAD')):
+            raise ValueError("target_load must be between {} and {}".format(os.getenv('CPU_LOAD_SVC_MIN_TARGET_LOAD'), os.getenv('CPU_LOAD_SVC_MAX_TARGET_LOAD')))
 
         new_cpu_load_job_all_cores = CPULoadJobAllCores(int(duration), int(target_load))
         self.input_queue.put(new_cpu_load_job_all_cores)
