@@ -13,7 +13,6 @@ from typing import ValuesView
 import psutil
 import queue
 from cpu_load_generator import load_single_core, load_all_cores, from_profile
-from messaging.mqtt_client import MqttMessage
 
 logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 
@@ -135,7 +134,7 @@ class CPULoadService(threading.Thread):
         if float(target_load) < float(os.getenv('CPU_LOAD_SVC_MIN_TARGET_LOAD')) or float(target_load) > float(os.getenv('CPU_LOAD_SVC_MAX_TARGET_LOAD')):
             raise ValueError("target_load must be between {} and {}".format(os.getenv('CPU_LOAD_SVC_MIN_TARGET_LOAD'), os.getenv('CPU_LOAD_SVC_MAX_TARGET_LOAD')))
 
-        new_cpu_load_job_all_cores = CPULoadJobAllCores(int(duration), int(target_load))
+        new_cpu_load_job_all_cores = CPULoadJobAllCores(int(duration), float(target_load))
         self.input_queue.put(new_cpu_load_job_all_cores)
         return new_cpu_load_job_all_cores
 
