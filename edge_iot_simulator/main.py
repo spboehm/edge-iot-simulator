@@ -25,7 +25,7 @@ if __name__=="__main__":
     parser.add_argument('--service', metavar='S', choices=('temperature_svc', 'cpu_load_svc', 'all'), default='all', type=str, nargs='?', help='State the service you would like to start...')
     args = parser.parse_args()
 
-    print(vars(args)['service'])
+    print(type(vars(args)['service']))
 
     publisher_queue = queue.Queue()
     consumer_queue = queue.Queue()
@@ -41,7 +41,7 @@ if __name__=="__main__":
         publisher.start()
         if vars(args)['service'] == "temperature_svc" or vars(args)['service'] == "all":
             temperature_svc.start()
-        if vars(args)['service'] == "cpu_load_service" or vars(args)['service'] == "all":
+        if vars(args)['service'] == "cpu_load_svc" or vars(args)['service'] == "all":
             cpu_load_svc.start()
         web_app.start()
         message_broker.start()
@@ -57,7 +57,7 @@ if __name__=="__main__":
         publisher.stop()
         if vars(args)['service'] == "temperature_svc" or vars(args)['service'] == "all":
             temperature_svc.stop()
-        if vars(args)['service'] == "cpu_load_service" or vars(args)['service'] == "all":
+        if vars(args)['service'] == "cpu_load_svc" or vars(args)['service'] == "all":
             cpu_load_svc.stop()
         web_app.stop()
         message_broker.stop()
@@ -67,7 +67,7 @@ if __name__=="__main__":
         publisher.join()
         if vars(args)['service'] == "temperature_svc" or vars(args)['service'] == "all":
             temperature_svc.join()
-        if vars(args)['service'] == "cpu_load_service" or vars(args)['service'] == "all":
+        if vars(args)['service'] == "cpu_load_svc" or vars(args)['service'] == "all":
             cpu_load_svc.join()
         web_app.join()
         message_broker.join()
