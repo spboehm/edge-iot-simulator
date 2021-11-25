@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 import threading
 import time
@@ -6,6 +7,7 @@ import json
 import copy
 import logging
 import os
+import sys
 
 from messaging.mqtt_client import MqttMessage
 logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
@@ -50,10 +52,11 @@ class TemperatureService(threading.Thread):
 
     def get_temperature(self, unit):
         with self.lock:
-            temperature_measurement = copy.deepcopy(self.last_temperature_measurement)
+            if (self.last_temperature_measurement is not None):
+                temperature_measurement = copy.deepcopy(self.last_temperature_measurement)
 
-        if (temperature_measurement is None):
-            raise TemperatureServiceException("No valid measurement available!")
+        if (self.last_temperature_measurement is None):
+            temperature_measurement = TemperatureMeasurement(time.time(), float('inf'), TemperatureUnits.celsius.name)
 
         return temperature_measurement.convert(unit)
 

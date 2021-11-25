@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 from core.temperature_svc import TemperatureMeasurement, TemperatureService,TemperatureUnits
 from core.cpu_load_svc import CPULoadJobAllCores, CPULoadService
 from messaging.mqtt_client import MqttException, MqttClient, MqttStatus, MessageBroker
@@ -19,6 +20,15 @@ load_dotenv()
 
 if __name__=="__main__":
 
+
+    parser = argparse.ArgumentParser(description='Edge-IoT Simulator')
+    parser.add_argument('--services', metavar='S', type=str, nargs='+', default='temperature_svc cpu_load_svc', help='add the services you would like to start')
+    args = parser.parse_args()
+
+    services = []
+    for item in [args.services]:
+        services += item
+
     publisher_queue = queue.Queue()
     consumer_queue = queue.Queue()
 
@@ -31,8 +41,10 @@ if __name__=="__main__":
     try:
         logging.info('Start Edge-IoT Simulator...')
         publisher.start()
-        temperature_svc.start()
-        cpu_load_svc.start()
+        if "temperature_svc" in services:
+            temperature_svc.start()
+        if "cpu_load_svc" in services:
+            cpu_load_svc.start()
         web_app.start()
         message_broker.start()
         time.sleep(5) # wait for connection to mqtt broker
@@ -45,16 +57,20 @@ if __name__=="__main__":
         logging.error("Unknown error occurred: " + str(e))
     finally:
         publisher.stop()
-        temperature_svc.stop()
-        cpu_load_svc.stop()
+        if "temperature_svc" in services:
+            temperature_svc.stop()
+        if "cpu_load_svc" in services:
+            cpu_load_svc.stop()
         web_app.stop()
         message_broker.stop()
 
         logging.info('Wait for graceful termination...')
         
         publisher.join()
-        temperature_svc.join()
-        cpu_load_svc.join()
+        if "temperature_svc" in services:
+            temperature_svc.join()
+        if "cpu_load_svc" in services:
+            cpu_load_svc.join()
         web_app.join()
         message_broker.join()
 

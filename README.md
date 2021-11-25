@@ -257,6 +257,9 @@ NOTE:
 * Change the working directory: `cd edge_iot_simulator`
 * Run:`python3 main.py`
 
+NOTE: If you want disable the `TemperatureService` (not burdening your broker with a lot messages), start the application with the following command: `python3 main.py --services cpu_load_svc`.
+Then, the `TemperatureService` is effectively disabled.
+
 You should see the following output:
 
 ```bash
