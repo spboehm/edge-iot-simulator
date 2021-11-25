@@ -44,14 +44,18 @@ Other available services follow the same decoupled architecture.
 
 ## TemperatureService (`core.temperature_svc.py`)
 
-This service is continuously transmitting temperature values to an mqtt endpoint. 
+This service is continuously transmitting temperature values to an mqtt endpoint.
 
-### HTTP-Endpoints:
+### HTTP-Endpoints
 
 * (UI) `/` \[GET\]: Current temperature value
 * (API) `/temperature` \[GET\]: Current temperature value as json
 
-### MQTT-Topics:
+All of the endpoints are protected with login.
+You can specify the initial user by defining `FLASK_WEB_USER` and `FLASK_WEB_PASSWORD` in the `env` file.
+Just have a look at section *Run the project locally*.
+
+### MQTT-Topics
 
 **TemperatureMessage:** `sensors/<MQTT_CLIENT_ID>/data`
 
@@ -72,7 +76,7 @@ For example, all logical cores can be utilized to run at 50% CPU utilization for
 
 ### HTTP_Endpoints
 
-* (UI) `/` `/cpu-load`: Allow to create new cpu load jobs and to manage already existing ones
+* (UI) `/cpu-load` \[GET\]: Allow to create new cpu load jobs and to manage already existing ones
 
 ### MQTT_TOPICS
 
@@ -104,21 +108,45 @@ On Error:
 }
 ```
 
-**Request Reading current QueuedCPULoadJobAllCores:** `services/cpuLoadSvc/<MQTT_CLIENT_ID>/jobs/read/req`
+**Request Reading all QueuedCPULoadJobAllCores:** `services/cpuLoadSvc/<MQTT_CLIENT_ID>/jobs/read/req`
 
 Payload intentionally left blank.
 
-**Response Reading current QueuedCPULoadJobAllCores:** `services/cpuLoadSvc/<MQTT_CLIENT_ID>/jobs/read/res`
+**Response Reading all QueuedCPULoadJobAllCores:** `services/cpuLoadSvc/<MQTT_CLIENT_ID>/jobs/read/res`
 
 ```json
 {
-  "duration": 60, 
-  "target_load": 0.55, 
-  "id": 1, 
-  "pid": 596, 
-  "state": "RUNNING"
+  "success":{
+    "1":{
+      "duration":60,
+      "target_load":0.25,
+      "id":1,
+      "pid":30040,
+      "state":"RUNNING"
+    },
+    "2":{
+      "duration":60,
+      "target_load":0.55,
+      "id":2,
+      "pid":null,
+      "state":"CREATED"
+    },
+    "3":{
+      "duration":60,
+      "target_load":0.55,
+      "id":3,
+      "pid":null,
+      "state":"CREATED"
+    }
+  }
 }
 ```
+PLEASE NOTE: 
+
+* The **CPULoadService** is running a SQLite database to store the username and password for the web login.
+* The submitted CPULoadJobs are only stored in-memory. That means, a shutdown of the application will lead to data loss. If you are restarting your application, you need recreate your job, respectively your job profile.
+
+### General Information
 
 All components can easily be configured with the following `.env` file with should be present in the root of this project.
 
@@ -171,6 +199,8 @@ FLASK_SECURITY_PASSWORD_SALT=
 FLASK_SQLITE_DB_PATH=sqlite:///../../flask-db.db
 
 ```
+
+Furthermore, you can find additional information MQTT topic configuration in `settings.py`.
 
 ## Prerequisites
 

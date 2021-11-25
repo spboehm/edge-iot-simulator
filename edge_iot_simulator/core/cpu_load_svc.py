@@ -140,8 +140,6 @@ class CPULoadService(threading.Thread):
 
     def get_cpu_load_job_history(self):
         with self.lock:
-            print(self.CPULoadJobHistory)
-            print(type(self.CPULoadJobHistory))
             return copy.deepcopy(self.CPULoadJobHistory)
 
     def get_cpu_load_job_all_cores_by_id(self, id):

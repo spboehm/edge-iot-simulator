@@ -137,6 +137,7 @@ class MessageBroker(threading.Thread):
 
             try:
                 if (mqtt_message.topic == topic_cpuLoadSvc_cpuLoadJob_create_req):
+                        response_topic = topic_cpuLoadSvc_cpuLoadJob_create_res
                         json_cpu_load_job_all_cores=json.loads(mqtt_message.payload.decode())
                         if (json_cpu_load_job_all_cores['duration'] is None):
                             raise ValueError('duration is missing')
@@ -147,18 +148,25 @@ class MessageBroker(threading.Thread):
                             self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_create_res, MqttSuccessMessage(created_cpu_load_job).to_json()))
 
                 elif (mqtt_message.topic == topic_cpuLoadSvc_cpuLoadJob_read_req):
-                    self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_read_res, self.cpu_load_svc.get_current_cpu_load_job_all_cores().to_json()))
+                    response_topic = topic_cpuLoadSvc_cpuLoadJob_read_res
+                    self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_read_res, MqttSuccessMessage(self.cpu_load_svc.get_cpu_load_job_history()).to_json()))
 
                 elif (mqtt_message.topic == topic_cpuLoadSvc_cpuLoadJob_delete_req):
+                    response_topic = topic_cpuLoadSvc_cpuLoadJob_delete_res
+                    if (len(mqtt_message.payload) == 0):
+                        raise ValueError('payload is missing')
+
                     json_cpu_load_job_delete_req = json.loads(mqtt_message.payload.decode())
                     if (json_cpu_load_job_delete_req['id'] is None ):
                         raise ValueError('id is missing')
-                    self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_delete_res, MqttSuccessMessage(self.cpu_load_svc.delete_cpu_load_job_by_id(json_cpu_load_job_delete_req['id']).to_json())))
+                    self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_delete_res, MqttSuccessMessage(self.cpu_load_svc.delete_cpu_load_job_by_id(json_cpu_load_job_delete_req['id'])).to_json()))
 
             except (ValueError, JSONDecodeError, KeyError) as e:
                 error_message = 'Illegal message received: ' + str(e)
                 self.logger.error(error_message)
-                self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_read_res, MqttErrorMessage(error_message)))
+                self.publisher_queue.put(MqttMessage(response_topic, MqttErrorMessage(error_message).to_json()))
+                
+
     def stop(self):
         self.logger.info('Message broker received shutdown signal...')
 
