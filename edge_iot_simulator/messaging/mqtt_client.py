@@ -11,7 +11,7 @@ import json
 import time
 import copy
 import ssl
-from settings import topic_cpuLoadSvc_cpuLoadJob_create_req, topic_cpuLoadSvc_cpuLoadJob_read_req, topic_cpuLoadSvc_cpuLoadJob_read_res, topic_cpuLoadSvc_cpuLoadJob_create_res
+from settings import *
 
 logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -56,6 +56,7 @@ class MqttClient(threading.Thread):
         self.logger.info("Subscribe to topics...")
         self.client.subscribe(topic_cpuLoadSvc_cpuLoadJob_create_req, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
         self.client.subscribe(topic_cpuLoadSvc_cpuLoadJob_read_req, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
+        self.client.subscribe(topic_cpuLoadSvc_cpuLoadJob_delete_req, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
 
     def on_disconnect(self, client, userdata, rc):
         if (rc != 0):
@@ -76,6 +77,7 @@ class MqttClient(threading.Thread):
             self.client.connect(os.getenv('MQTT_SERVER_NAME'), int(os.getenv('MQTT_PORT')))
             self.client.loop_start()
             
+            # TODO: add further try-catch
             while not self.exit_event.is_set():
                 mqtt_message = self.queue.get()
                 if (os.getenv('MQTT_TOPIC_PUBLISHER')+'/'+os.getenv('MQTT_CLIENT_ID')+'/'+os.getenv('MQTT_TOPIC_PUBLISHER_STATE')):
@@ -84,7 +86,7 @@ class MqttClient(threading.Thread):
                     else:
                         topic = mqtt_message.topic
                         payload = mqtt_message.payload
-                        self.client.publish(topic, json.dumps(payload.to_json()), int(os.getenv('MQTT_PUBLISH_QOS')))
+                        self.client.publish(topic, payload, int(os.getenv('MQTT_PUBLISH_QOS')))
         except Exception as e:
             self.logger.error('Error establishing connection to {}:{}, {}'.format(os.getenv('MQTT_SERVER_NAME'),os.getenv('MQTT_PORT'),str(e)))
 
@@ -133,25 +135,30 @@ class MessageBroker(threading.Thread):
             else:
                 self.logger.error('Unknown message received!')
 
-            if (mqtt_message.topic == topic_cpuLoadSvc_cpuLoadJob_create_req):
-                try:
-                    json_cpu_load_job_all_cores= json.loads(mqtt_message.payload.decode())
-                    if (json_cpu_load_job_all_cores['duration'] is None):
-                        raise ValueError('duration is missing')
-                    elif (json_cpu_load_job_all_cores['target_load'] is None):
-                        raise ValueError('target_load is missing')
-                    else:
-                        created_cpu_load_job = self.cpu_load_svc.create_cpu_load_job(json_cpu_load_job_all_cores['duration'], json_cpu_load_job_all_cores['target_load'])
-                        self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_create_res, MqttSuccessMessage(created_cpu_load_job)))
+            try:
+                if (mqtt_message.topic == topic_cpuLoadSvc_cpuLoadJob_create_req):
+                        json_cpu_load_job_all_cores=json.loads(mqtt_message.payload.decode())
+                        if (json_cpu_load_job_all_cores['duration'] is None):
+                            raise ValueError('duration is missing')
+                        elif (json_cpu_load_job_all_cores['target_load'] is None):
+                            raise ValueError('target_load is missing')
+                        else:
+                            created_cpu_load_job = self.cpu_load_svc.create_cpu_load_job(json_cpu_load_job_all_cores['duration'], json_cpu_load_job_all_cores['target_load'])
+                            self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_create_res, MqttSuccessMessage(created_cpu_load_job).to_json()))
 
-                except (ValueError, JSONDecodeError, KeyError) as e:
-                    error_message = 'Illegal message received: ' + str(e)
-                    self.logger.error(error_message)
-                    self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_read_res, MqttErrorMessage(error_message)))
+                elif (mqtt_message.topic == topic_cpuLoadSvc_cpuLoadJob_read_req):
+                    self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_read_res, self.cpu_load_svc.get_current_cpu_load_job_all_cores().to_json()))
 
-            elif (mqtt_message.topic == topic_cpuLoadSvc_cpuLoadJob_read_req):
-                self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_read_res, self.cpu_load_svc.get_current_cpu_load_job_all_cores()))
+                elif (mqtt_message.topic == topic_cpuLoadSvc_cpuLoadJob_delete_req):
+                    json_cpu_load_job_delete_req = json.loads(mqtt_message.payload.decode())
+                    if (json_cpu_load_job_delete_req['id'] is None ):
+                        raise ValueError('id is missing')
+                    self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_delete_res, MqttSuccessMessage(self.cpu_load_svc.delete_cpu_load_job_by_id(json_cpu_load_job_delete_req['id']).to_json())))
 
+            except (ValueError, JSONDecodeError, KeyError) as e:
+                error_message = 'Illegal message received: ' + str(e)
+                self.logger.error(error_message)
+                self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_read_res, MqttErrorMessage(error_message)))
     def stop(self):
         self.logger.info('Message broker received shutdown signal...')
 
@@ -168,7 +175,7 @@ class MqttMessage():
         self.payload = payload
 
     def to_json(self):
-        return json.dumps(self.__dict__)
+        return json.dumps(self, default=lambda o: o.__dict__)
 
     def to_string(self):
         return str(self.to_json())
@@ -186,7 +193,7 @@ class MqttStatistics():
         self.message_counter = message_counter
 
     def to_json(self):
-        return json.dumps(self.__dict__)
+        return json.dumps(self, default=lambda o: o.__dict__)
 
     def to_string(self):
         return str(self.to_json())
@@ -197,7 +204,7 @@ class MqttSuccessMessage():
         self.success = success
 
     def to_json(self):
-        return json.dumps(self.__dict__)
+        return json.dumps(self, default=lambda o: o.__dict__)
 
     def to_string(self):
         return str(self.to_json())
@@ -208,7 +215,7 @@ class MqttErrorMessage():
         self.error = error
 
     def to_json(self):
-        return json.dumps(self.__dict__)
+        return json.dumps(self, default=lambda o: o.__dict__)
 
     def to_string(self):
         return str(self.to_json())

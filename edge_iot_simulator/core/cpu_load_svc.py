@@ -140,6 +140,8 @@ class CPULoadService(threading.Thread):
 
     def get_cpu_load_job_history(self):
         with self.lock:
+            print(self.CPULoadJobHistory)
+            print(type(self.CPULoadJobHistory))
             return copy.deepcopy(self.CPULoadJobHistory)
 
     def get_cpu_load_job_all_cores_by_id(self, id):
@@ -153,12 +155,16 @@ class CPULoadService(threading.Thread):
                 return self.get_cpu_load_job_all_cores_by_id(self.current_job_id)
 
     def delete_cpu_load_job_by_id(self, id):
+        # TODO: do validation
         id = int(id)
         with self.lock:
             if id in self.CPULoadJobHistory and self.proc is not None and self.proc.is_alive():
                 if self.CPULoadJobHistory[id].state == CPULoadJobStates.RUNNING.name:
                     self.stop_current_CPULoadJob()
                 self.CPULoadJobHistory[id].state = CPULoadJobStates.ABORTED.name
+                return copy.deepcopy(self.CPULoadJobHistory[id])
+            else:
+                raise ValueError("CPULoadJob with id {} does not exist!".format(id))
                 
 
 class CPULoadJobAllCores():
@@ -173,13 +179,20 @@ class CPULoadJobAllCores():
     def to_string(self):
         return str(self.to_json())
 
-class QueuedCPULoadJobAllCores(CPULoadJobAllCores):
+class QueuedCPULoadJobAllCores():
 
     def __init__(self, duration, target_load, id, pid, state):
-        super().__init__(duration, target_load)
+        self.duration = duration
+        self.target_load = target_load
         self.id = id
         self.pid = pid
         self.state = state
+
+    def to_json(self):
+        return json.dumps(self.__dict__)
+
+    def to_string(self):
+        return str(self.to_json())
 
 class CPULoadJobStates(Enum):
     CREATED = 1

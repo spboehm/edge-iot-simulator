@@ -86,6 +86,7 @@ class WebApp(threading.Thread):
         @app.route("/cpu-load/<id>", methods=["DELETE"])
         @auth_required()
         def terminate_cpu_load_job(id):
+            # TODO: handle return
             cpu_load_svc.delete_cpu_load_job_by_id(id)
             return Response(status=200)
 

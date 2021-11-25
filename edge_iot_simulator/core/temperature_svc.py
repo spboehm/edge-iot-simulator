@@ -58,7 +58,7 @@ class TemperatureService(threading.Thread):
         return temperature_measurement.convert(unit)
 
     def create_mqtt_message(self, temperature_measurement):
-        self.queue.put(MqttMessage(os.getenv('MQTT_TOPIC_SENSORS')+'/'+os.getenv('MQTT_CLIENT_ID')+'/'+os.getenv('MQTT_TOPIC_SENSORS_DATA'), temperature_measurement))
+        self.queue.put(MqttMessage(os.getenv('MQTT_TOPIC_SENSORS')+'/'+os.getenv('MQTT_CLIENT_ID')+'/'+os.getenv('MQTT_TOPIC_SENSORS_DATA'), temperature_measurement.to_json()))
 
 class TemperatureMeasurement():
 
@@ -87,7 +87,7 @@ class TemperatureMeasurement():
         return self
 
     def to_json(self):
-        return json.dumps(self.__dict__)
+        return json.dumps(self, default=lambda o: o.__dict__)
 
     def to_string(self):
         return str(self.to_json())
