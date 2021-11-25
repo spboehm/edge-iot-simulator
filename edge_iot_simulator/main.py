@@ -29,7 +29,7 @@ if __name__=="__main__":
     message_broker = MessageBroker(consumer_queue, publisher_queue, cpu_load_svc)
 
     try:
-        logging.info('Please press any key to interrupt...')
+        logging.info('Start Edge-IoT Simulator...')
         publisher.start()
         temperature_svc.start()
         cpu_load_svc.start()
