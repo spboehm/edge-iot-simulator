@@ -54,10 +54,14 @@ This service is continuously transmitting temperature values to an mqtt endpoint
 All of the endpoints are protected with login.
 You can specify the initial user by defining `FLASK_WEB_USER` and `FLASK_WEB_PASSWORD` in the `env` file.
 Just have a look at section *Run the project locally*.
+By default, the web ui is running under `https://<<your-ip>>:5000`.
+You need to accept the self-signed certificate in order to proceed.
 
 ### MQTT-Topics
 
 **TemperatureMessage:** `sensors/<MQTT_CLIENT_ID>/data`
+
+Payload:
 
 ```json
 {
@@ -82,6 +86,8 @@ For example, all logical cores can be utilized to run at 50% CPU utilization for
 
 **Request Creation of CPULoadJobAllCores:** `services/cpuLoadSvc/<MQTT_CLIENT_ID>/jobs/create/req`
 
+Payload:
+
 ```json
 {
   "duration": 200,
@@ -95,8 +101,10 @@ On Success:
 
 ```json
 {
-  "duration": 200,
-  "target_load": 0.50
+  "success":{
+    "duration":200,
+    "target_load":0.5
+  }
 }
 ```
 
@@ -141,7 +149,32 @@ Payload intentionally left blank.
   }
 }
 ```
-PLEASE NOTE: 
+
+**Request delete specific QueuedCPULoadJobAllCores:** `services/cpuLoadSvc/<MQTT_CLIENT_ID>/jobs/delete/req`
+
+Payload:
+
+```json
+{
+  "id":1
+}
+```
+
+**Response delete specific QueuedCPULoadJobAllCores:** `services/cpuLoadSvc/<MQTT_CLIENT_ID>/jobs/delete/res`
+
+```json
+{
+  "success":{
+    "duration":200,
+    "target_load":0.5,
+    "id":4,
+    "pid":13767,
+    "state":"ABORTED"
+  }
+}
+```
+
+PLEASE NOTE:
 
 * The **CPULoadService** is running a SQLite database to store the username and password for the web login.
 * The submitted CPULoadJobs are only stored in-memory. That means, a shutdown of the application will lead to data loss. If you are restarting your application, you need recreate your job, respectively your job profile.
@@ -192,15 +225,18 @@ CPU_LOAD_SVC_MAX_TARGET_LOAD=0.75
 
 # web
 WEB_HOSTNAME=localhost
-FLASK_WEB_USER=
-FLASK_WEB_PASSWORD=
+FLASK_WEB_USER= # at least 4 characters
+FLASK_WEB_PASSWORD= # at least 8 characters
 FLASK_SECRET_KEY=
 FLASK_SECURITY_PASSWORD_SALT=
 FLASK_SQLITE_DB_PATH=sqlite:///../../flask-db.db
 
 ```
 
-Furthermore, you can find additional information MQTT topic configuration in `settings.py`.
+NOTE:
+
+* Please make sure that you provide at least 4 characters for `FLASK_WEB_USER` and `FLASK_WEB_PASSWORD`.
+* Furthermore, you can find additional information MQTT topic configuration in `settings.py`.
 
 ## Prerequisites
 
@@ -284,9 +320,12 @@ edge-IoT simulator <-> docker daemon <-> mqtt message broker
 ------------------------------------------------------
 ```
 
+By default web application is available under `https://<your ip>:5000`.
+Since the web application contains a self-signed certificate, you need to accept this certificate in your browser.
+
 ## Run with docker
 
-To run edge-IoT simulator with docker, do the follpwing:
+To run edge-IoT simulator with docker, do the following:
 
 * Change to the root directory of this repository
 * Build the image: `sudo docker build -t edge-iot-simulator:1.0 .`
