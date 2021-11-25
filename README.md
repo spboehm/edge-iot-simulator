@@ -248,16 +248,16 @@ NOTE:
 * Install necessary packages: `sudo apt-get install python3-flask python3-venv python3-wheel`
 * Clone/Pull this repository: `git clone https://gitlab.rz.uni-bamberg.de/sebastian.boehm/edge-iot-simulator`
 * Go into the root directory of the repository, switch then to (`cd edge_iot_simulator`)
-* Create the env file `.env` with the contents above and change the values according to your needs
+* Create the env file `.env` with the contents above and change the values according to your needs. Alternatively, you can copy the `.env-example` with `cp .env-example .env`. DO NOT FORGET TO ALTER THE SENSITIVE VARIABLES!!!
 * Go back to the root directory of the repository: `cd ..`
 * Create a virtual environment: `python3 -m venv venv`
 * Change to the virtual environment: `source venv/bin/activate`
 * Update pip: `pip3 install --upgrade pip`
 * Install the necessary dependencies: `pip3 install -r requirements.txt`
 * Change the working directory: `cd edge_iot_simulator`
-* Run:`python3 main.py`
+* Run: `python3 main.py` (all services will start).
 
-NOTE: If you want disable the `TemperatureService` (not burdening your broker with a lot messages), start the application with the following command: `python3 main.py --services cpu_load_svc`.
+NOTE: If you want disable the `TemperatureService` (not burdening your broker with a lot messages), start the application with the following command: `python3 main.py --service cpu_load_svc`.
 Then, the `TemperatureService` is effectively disabled.
 
 You should see the following output:

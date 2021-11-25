@@ -22,12 +22,10 @@ if __name__=="__main__":
 
 
     parser = argparse.ArgumentParser(description='Edge-IoT Simulator')
-    parser.add_argument('--services', metavar='S', type=str, nargs='+', default='temperature_svc cpu_load_svc', help='add the services you would like to start')
+    parser.add_argument('--service', metavar='S', choices=('temperature_svc', 'cpu_load_svc', 'all'), default='all', type=str, nargs='?', help='State the service you would like to start...')
     args = parser.parse_args()
 
-    services = []
-    for item in [args.services]:
-        services += item
+    print(vars(args)['service'])
 
     publisher_queue = queue.Queue()
     consumer_queue = queue.Queue()
@@ -41,9 +39,9 @@ if __name__=="__main__":
     try:
         logging.info('Start Edge-IoT Simulator...')
         publisher.start()
-        if "temperature_svc" in services:
+        if vars(args)['service'] == "temperature_svc" or vars(args)['service'] == "all":
             temperature_svc.start()
-        if "cpu_load_svc" in services:
+        if vars(args)['service'] == "cpu_load_service" or vars(args)['service'] == "all":
             cpu_load_svc.start()
         web_app.start()
         message_broker.start()
@@ -57,9 +55,9 @@ if __name__=="__main__":
         logging.error("Unknown error occurred: " + str(e))
     finally:
         publisher.stop()
-        if "temperature_svc" in services:
+        if vars(args)['service'] == "temperature_svc" or vars(args)['service'] == "all":
             temperature_svc.stop()
-        if "cpu_load_svc" in services:
+        if vars(args)['service'] == "cpu_load_service" or vars(args)['service'] == "all":
             cpu_load_svc.stop()
         web_app.stop()
         message_broker.stop()
@@ -67,9 +65,9 @@ if __name__=="__main__":
         logging.info('Wait for graceful termination...')
         
         publisher.join()
-        if "temperature_svc" in services:
+        if vars(args)['service'] == "temperature_svc" or vars(args)['service'] == "all":
             temperature_svc.join()
-        if "cpu_load_svc" in services:
+        if vars(args)['service'] == "cpu_load_service" or vars(args)['service'] == "all":
             cpu_load_svc.join()
         web_app.join()
         message_broker.join()
