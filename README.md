@@ -1,5 +1,7 @@
 # Edge-IoT Simulator
 
+Test
+
 The following project contains a small edge-IoT simulator.
 
 ## Components and Architecture
