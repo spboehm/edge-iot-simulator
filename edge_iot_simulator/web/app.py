@@ -1,4 +1,5 @@
 import os
+import json
 
 import threading
 import logging
@@ -89,6 +90,10 @@ class WebApp(threading.Thread):
             # TODO: handle return
             cpu_load_svc.delete_cpu_load_job_by_id(id)
             return Response(status=200)
+
+        @app.route("/device-info")
+        def get_device_info():
+            return json.dumps({"device-info": os.getenv('MQTT_CLIENT_ID')})
 
         return app
 
