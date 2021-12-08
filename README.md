@@ -50,6 +50,7 @@ This service is continuously transmitting temperature values to an mqtt endpoint
 
 * (UI) `/` \[GET\]: Current temperature value
 * (API) `/temperature` \[GET\]: Current temperature value as json
+* (API) `/device-info` \[GET\]: Current MQTT_CLIENT_ID as json 
 
 All of the endpoints are protected with login.
 You can specify the initial user by defining `FLASK_WEB_USER` and `FLASK_WEB_PASSWORD` in the `env` file.
