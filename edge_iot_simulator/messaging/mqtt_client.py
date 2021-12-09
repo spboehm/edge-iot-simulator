@@ -80,13 +80,12 @@ class MqttClient(threading.Thread):
             # TODO: add further try-catch
             while not self.exit_event.is_set():
                 mqtt_message = self.queue.get()
-                if (os.getenv('MQTT_TOPIC_PUBLISHER')+'/'+os.getenv('MQTT_CLIENT_ID')+'/'+os.getenv('MQTT_TOPIC_PUBLISHER_STATE')):
-                    if (mqtt_message.payload == "stopped"):
-                        return
-                    else:
-                        topic = mqtt_message.topic
-                        payload = mqtt_message.payload
-                        self.client.publish(topic, payload, int(os.getenv('MQTT_PUBLISH_QOS')))
+                if (mqtt_message.topic == topic_mqtt_client_publisher_state and mqtt_message.payload == "stopped"):
+                    return
+                else:
+                    topic = mqtt_message.topic
+                    payload = mqtt_message.payload
+                    self.client.publish(topic, payload, int(os.getenv('MQTT_PUBLISH_QOS')))
         except Exception as e:
             self.logger.error('Error establishing connection to {}:{}, {}'.format(os.getenv('MQTT_SERVER_NAME'),os.getenv('MQTT_PORT'),str(e)))
 
@@ -108,7 +107,7 @@ class MqttClient(threading.Thread):
         self.exit_event.set()
         self.client.loop_stop()
         self.client.disconnect()
-        self.queue.put(MqttMessage(os.getenv("MQTT_TOPIC_PUBLISHER")+'/'+os.getenv('MQTT_CLIENT_ID') + '/' +os.getenv('MQTT_TOPIC_PUBLISHER_STATE'), "stopped"))
+        self.queue.put(MqttMessage(topic_mqtt_client_publisher_state, "stopped"))
         if (self.lock.locked()):
             self.lock.release()
 

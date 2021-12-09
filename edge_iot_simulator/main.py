@@ -25,8 +25,6 @@ if __name__=="__main__":
     parser.add_argument('--service', metavar='S', choices=('temperature_svc', 'cpu_load_svc', 'all'), default='all', type=str, nargs='?', help='State the service you would like to start...')
     args = parser.parse_args()
 
-    print(type(vars(args)['service']))
-
     publisher_queue = queue.Queue()
     consumer_queue = queue.Queue()
 

@@ -9,6 +9,7 @@ import logging
 import os
 import sys
 
+from settings import topic_temperatureSvc_temperature_data
 from messaging.mqtt_client import MqttMessage
 logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 
@@ -61,7 +62,7 @@ class TemperatureService(threading.Thread):
         return temperature_measurement.convert(unit)
 
     def create_mqtt_message(self, temperature_measurement):
-        self.queue.put(MqttMessage(os.getenv('MQTT_TOPIC_SENSORS')+'/'+os.getenv('MQTT_CLIENT_ID')+'/'+os.getenv('MQTT_TOPIC_SENSORS_DATA'), temperature_measurement.to_json()))
+        self.queue.put(MqttMessage(topic_temperatureSvc_temperature_data, temperature_measurement.to_json()))
 
 class TemperatureMeasurement():
 
