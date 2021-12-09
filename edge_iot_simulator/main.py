@@ -10,13 +10,11 @@ import os
 import random
 import queue
 import time
-from dotenv import load_dotenv
 import signal
 import time
 import sys
 
 logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
-load_dotenv()
 
 if __name__=="__main__":
 

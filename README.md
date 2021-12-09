@@ -185,6 +185,17 @@ PLEASE NOTE:
 All components can easily be configured with the following `.env` file with should be present in the root of this project.
 
 ```bash
+#
+# Example env file - DO NOT USE IN PRODUCTION!!!
+# 
+# MAKE SURE YOU ARE OVERRIDING AT LEAST
+# 
+# - MQTT_CLIENT_ID
+# - FLASK_WEB_USER
+# - FLASK_WEB_PASSWORD
+# - FLASK_SECRET_KEY
+# - FLASK_SECURITY_PASSWORD_SALT
+
 # messaging
 MQTT_SERVER_NAME=localhost
 MQTT_PORT=1883
@@ -208,12 +219,14 @@ MQTT_TOPIC_REQ_TYPE_CREATE=create/req
 MQTT_TOPIC_RES_TYPE_CREATE=create/res
 MQTT_TOPIC_REQ_TYPE_READ=read/req
 MQTT_TOPIC_RES_TYPE_READ=read/res
+MQTT_TOPIC_REQ_TYPE_DELETE=delete/req
+MQTT_TOPIC_RES_TYPE_DELETE=delete/res
 
-## temperature
+## temperature-svc
 MQTT_TOPIC_SENSORS=sensors
 MQTT_TOPIC_SENSORS_DATA=data
 
-## cpu 
+## cpu_load_svc
 MQTT_TOPIC_SERVICES=services
 MQTT_TOPIC_CPU_LOAD_SERVICE=cpuLoadSvc
 MQTT_TOPIC_CPU_LOAD_SERVICE_DATA=jobs
@@ -226,18 +239,28 @@ CPU_LOAD_SVC_MAX_TARGET_LOAD=0.75
 
 # web
 WEB_HOSTNAME=localhost
-FLASK_WEB_USER= # at least 4 characters
-FLASK_WEB_PASSWORD= # at least 8 characters
-FLASK_SECRET_KEY=
-FLASK_SECURITY_PASSWORD_SALT=
+FLASK_WEB_USER=test@test.com
+FLASK_WEB_PASSWORD=kaq29387ckj
+FLASK_SECRET_KEY=pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw
+FLASK_SECURITY_PASSWORD_SALT=146585145368132386173505678016728509634
 FLASK_SQLITE_DB_PATH=sqlite:///../../flask-db.db
+
+# MQTT topics overrides
+CUSTOM_MQTT_CLIENT_PUBLISHER_STATE=
+CUSTOM_TOPIC_TEMPERATURESVC_TEMPERATURE_DATA=
+CUSTOM_TOPIC_CPULOADSVC_CPULOADJOB_CREATE_REQ=
+CUSTOM_TOPIC_CPULOADSVC_CPULOADJOB_CREATE_RES=
+CUSTOM_TOPIC_CPULOADSVC_CPULOADJOB_READ_REQ=
+CUSTOM_TOPIC_CPULOADSVC_CPULOADJOB_READ_RES=
+CUSTOM_TOPIC_CPULOADSVC_CPULOADJOB_DELETE_REQ=
+CUSTOM_TOPIC_CPULOADSVC_CPULOADJOB_DELETE_RES=
 
 ```
 
 NOTE:
 
 * Please make sure that you provide at least 4 characters for `FLASK_WEB_USER` and `FLASK_WEB_PASSWORD`.
-* Furthermore, you can find additional information MQTT topic configuration in `settings.py`.
+* **NEW!** If you want to override the predefined MQTT topics, just define your desired custom topics for the different services under *MQTT topics overrides*. Then, Edge-IoT simulator will take your custom topic instead of the default configuration.
 
 ## Prerequisites
 
