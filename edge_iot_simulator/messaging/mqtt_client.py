@@ -11,10 +11,45 @@ import json
 import time
 import copy
 import ssl
+import datetime
+import jwt
 from settings import *
 
 logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+def create_gcp_jwt():
+    """Creates a JWT (https://jwt.io) to establish an MQTT connection.
+    Args:
+     algorithm: The encryption algorithm to use. Either 'RS256' or 'ES256'
+    Returns:
+        A JWT generated from the given project_id and private key, which
+        expires in 20 minutes. After 20 minutes, your client will be
+        disconnected, and a new JWT will have to be generated.
+    Raises:
+        ValueError: If the private_key_file does not contain a known key.
+    """
+    minutes = 20
+    if os.getenv('JWT_EXP_IN_MINUTES'):
+        minutes = int(os.getenv('JWT_EXP_IN_MINUTES'))
+    token = {
+        # The time that the token was issued at
+        "iat": datetime.datetime.now(tz=datetime.timezone.utc),
+        # The time the token expires.
+        "exp": datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(minutes=minutes),
+        # The audience field should always be set to the GCP project id.
+        "aud": os.getenv('GCP_PROJECT_ID'),
+    }
+    
+    # Read the private key file.
+    with open(os.getenv('MQTT_PASSWORD'), "r") as f:
+        private_key = f.read()
+
+    algo = "RS256"
+    if os.getenv('JWT_ALG'):
+        algo = os.getenv('JWT_ALG')
+    jwt_key = jwt.encode(token, private_key, algorithm=algo)
+    return jwt_key
 
 class MqttClient(threading.Thread):
 
@@ -31,7 +66,13 @@ class MqttClient(threading.Thread):
     def init_mqtt(self):
         client = mqtt.Client(client_id=os.getenv('MQTT_CLIENT_ID'), clean_session=False)
         if (os.getenv('MQTT_USERNAME') is not None and os.getenv('MQTT_PASSWORD') is not None):
-            client.username_pw_set(username=os.getenv('MQTT_USERNAME'), password=os.getenv('MQTT_PASSWORD'))
+            if os.getenv('MQTT_PASSWORD').endswith('.pem'):
+                password = create_gcp_jwt()
+            else:
+                password = os.getenv('MQTT_PASSWORD') 
+
+            client.username_pw_set(username=os.getenv('MQTT_USERNAME'), password=password)
+
         if(os.getenv('MQTT_TLS') == 'True'):
             ca_certs = os.getenv('MQTT_CA_CERTS') if os.getenv('MQTT_CA_CERTS') is not None else None
             certfile = os.getenv('MQTT_CERTFILE') if os.getenv('MQTT_CERTFILE') is not None else None
@@ -54,10 +95,13 @@ class MqttClient(threading.Thread):
         self.logger.info("Publisher connected with result code " + str(rc))
         
         self.logger.info("Subscribe to topics...")
-        self.client.subscribe(topic_cpuLoadSvc_cpuLoadJob_create_req, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
-        self.client.subscribe(topic_cpuLoadSvc_cpuLoadJob_read_req, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
-        self.client.subscribe(topic_cpuLoadSvc_cpuLoadJob_delete_req, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
-
+        if os.getenv('CUSTOM_TOPIC_ALL_RES'):
+            self.client.subscribe(os.getenv('CUSTOM_TOPIC_ALL_RES'), int(os.getenv('MQTT_SUBSCRIBE_QOS')))
+        else:
+            self.client.subscribe(topic_cpuLoadSvc_cpuLoadJob_create_req, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
+            self.client.subscribe(topic_cpuLoadSvc_cpuLoadJob_read_req, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
+            self.client.subscribe(topic_cpuLoadSvc_cpuLoadJob_delete_req, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
+            
     def on_disconnect(self, client, userdata, rc):
         if (rc != 0):
            self.logger.error('Unexpected disconnect: ' + str(rc))
