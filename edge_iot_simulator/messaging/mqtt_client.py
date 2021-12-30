@@ -29,9 +29,10 @@ def create_gcp_jwt():
     Raises:
         ValueError: If the private_key_file does not contain a known key.
     """
-    minutes = 20
     if os.getenv('JWT_EXP_IN_MINUTES'):
         minutes = int(os.getenv('JWT_EXP_IN_MINUTES'))
+    else:
+        minutes = 20
     token = {
         # The time that the token was issued at
         "iat": datetime.datetime.now(tz=datetime.timezone.utc),
@@ -45,9 +46,10 @@ def create_gcp_jwt():
     with open(os.getenv('MQTT_PASSWORD'), "r") as f:
         private_key = f.read()
 
-    algo = "RS256"
     if os.getenv('JWT_ALG'):
         algo = os.getenv('JWT_ALG')
+    else:
+        algo = "RS256"
     jwt_key = jwt.encode(token, private_key, algorithm=algo)
     return jwt_key
 
