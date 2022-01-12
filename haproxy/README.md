@@ -25,10 +25,10 @@ In the following, we want to implement a typical load-balanced infrastructure wi
 
 The following components are involved:
 
-* **1:** A physical host or virtual machine is required. For testing purposes, this can be your local machine or a virtual machine (even running on your local system). This guide assumes a Linux installation, but it might also work with Windows. 
+* **1:** A physical host or virtual machine is required. For testing purposes, this can be your local machine or a virtual machine (even running on your local system). This guide assumes a Linux installation, but it might also work with Windows.
 * **2:** [Docker](https://www.docker.com/) as container platform. We will run all necessary components with the usage of lightweight containers. Therefore, Docker must be installed on the system and properly configured. Let's have a look at the following guide if you have never used Docker before: [Orientation and setup | Docker Documentation](https://docs.docker.com/get-started/).
-* **3:** [HAProxy](http://www.haproxy.org/) as load balancer running in front of all backend containers. We will use a containerized version as well. 
-* **4:** Also, we need the backend containers responding to the actual requests. For simplicity, we take a basic [Nginx](https://hub.docker.com/_/nginx) container image and add a custom HTML file containing the container's hostname. In our example, this is `web0x` for all of the three containers we will use. Initially, we start with one single instance (`web01`). 
+* **3:** [HAProxy](http://www.haproxy.org/) as load balancer running in front of all backend containers. We will use a containerized version as well.
+* **4:** Also, we need the backend containers responding to the actual requests. For simplicity, we take a basic [Nginx](https://hub.docker.com/_/nginx) container image and add a custom HTML file containing the container's hostname. In our example, this is `web0x` for all of the three containers we will use. Initially, we start with one single instance (`web01`).
 * **5:** After setting up the basic load balancing, we dynamically remove and add backend containers that can process new requests. For this, we will issue REST calls via HTTP to HAProxy's Data Plane API.
 
 ### Requirements
@@ -150,7 +150,7 @@ $> tree
 
 #### Start the Nginx Containers
 
-Before starting, make sure that no application is listening to port `81`, `82`, or `83`. 
+Before starting, make sure that no application is listening to port `81`, `82`, or `83`.
 You can do that by going through the list you get by the following command:
 
 ```bash
@@ -224,7 +224,7 @@ Now we can start with the configuration of HAProxy to realize the load-balancing
 
 ### Setup HAProxy Container (3)
 
-#### Preparation
+#### HAProxy Preparation
 
 For setting up HAProxy, we will add another service to our docker-compose.yml file.
 This is [haproxytech/haproxy-ubuntu:2.5](https://hub.docker.com/r/haproxytech/haproxy-ubuntu).
@@ -290,7 +290,7 @@ Also, we extended the `networks` section by an additional network `frontend`:
     driver: bridge
 ```
 
-In addition, we removed the ports declarations from `web01-web03`, because they are not needed anymore. 
+In addition, we removed the ports declarations from `web01-web03`, because they are not needed anymore.
 
 ```yaml
     ports:
@@ -303,10 +303,10 @@ Again, there are a few things to mention:
 
 * Under `volumes`, we added (according to the documentation) a bind mount that expects a directory `haproxy` in the current directory (`./`) with at least a file (`haproxy.cfg`) that contains a valid configuration for HAProxy. We will talk about that in the next section.
 * Under `networks`, we also assigned a second network named `frontend`. The question now is, **Why do we need this additional network?**
-Usually, only those services that belong together and are required to communicate should be put together in the same network. 
-This will instruct Docker to put them into the same subnet and allow them to communicate. 
+Usually, only those services that belong together and are required to communicate should be put together in the same network.
+This will instruct Docker to put them into the same subnet and allow them to communicate.
 Other containers from different networks are not allowed to communicate (in terms of establishing a connection) to containers in foreign networks.
-This is called network isolation and can drastically improve network security. 
+This is called network isolation and can drastically improve network security.
 In the worst case, compromised containers can only communicate to a subset of container instances.
 In our example, we put the `haproxy` container and the `nginx` containers into the same network (`backend`) because they must communicate.
 Only `haproxy` will reside in an additional `frontend` network which might be extended over time with additional instances, for example, with additional instances of HAProxy that are required to communicate to achieve a proper failover.
@@ -346,7 +346,7 @@ backend
 
 We won't get into details here, but a few points are worth mentioning:
 
-* Section `global`: In this section `haproxy-wide settings are configuration (e.g., general-, security-, and performance-related) settings. 
+* Section `global`: In this section `haproxy-wide settings are configuration (e.g., general-, security-, and performance-related) settings.
 * Section `defaults`: All settings in this area are automatically added to all `frontend` and `backend` sections. This can be, for example, configurations like the used protocol and timeouts.
 * Section `frontend`: In this section (there can be multiple), basic connection-specific settings are defined to which the front is, for example listening to (IP address and port).
 * Section `backend`: All the necessary information required to forward requests from a particular `frontend` section to a `backend` section goes into this section. This is typically a set of servers that a serving requests.
@@ -388,7 +388,7 @@ backend web-backend
 
 As you might have noticed, we are using the service name (`web01`) from the docker-compose file to define the address of our backend server. We can do that because HAProxy and all our Nginx containers are in the same docker network `backend`. We can use docker's internal DNS resolution if this is the case.
 
-! If you are using the `default` bridge network provided by docker, DNS resolution does not work. 
+! If you are using the `default` bridge network provided by docker, DNS resolution does not work.
 Your final configuration file `haproxy.cfg` located in the folder`haproxy` should look as follows:
 
 ```bash
@@ -458,7 +458,7 @@ backend web-backend
 
 Save the configuration changes, and start `haproxy` again: `sudo docker-compose up -d`.
 
-Now, we test if all backends are reachable. 
+Now, we test if all backends are reachable.
 At most, three requests should be sufficient to check if every **backend** service responds because we applied round-robin load-balancing.
 
 ```bash
@@ -504,10 +504,10 @@ $> curl localhost:80
 
 !!!! As you can see, `haproxy` requests the backend servers on-by-one.
 
-#### Load-balancing with Persistence 
+#### Load-balancing with Persistence
 
 In some use cases, it is necessary to redirect a set of clients to the same backend server and to avoid the default round-robin load-balancing (for example, if backend servers do not share session information across the instances).
-To redirect to the same backend server, we can instruct HAProxy to send a Cookie to the Client. 
+To redirect to the same backend server, we can instruct HAProxy to send a cookie to the client.
 This can be done by adding the line `cookie SERVERID insert indirect nocache` to the `backend` block.
 Furthermore, we need to append the cookie check (`check cookie s1`) for all servers in the backend.
 
@@ -531,19 +531,19 @@ $> curl -I -c /tmp/cookie localhost:80
 
 HTTP/1.1 200 OK
 server: nginx/1.21.4
-date: Wed, 12 Jan 2022 13:09:29 GMT
+date: Wed, 12 Jan 2022 23:42:56 GMT
 content-type: text/html
 content-length: 161
-last-modified: Tue, 11 Jan 2022 16:38:35 GMT
-etag: "61ddb28b-a1"
+last-modified: Wed, 12 Jan 2022 23:28:01 GMT
+etag: "61df6401-a1"
 accept-ranges: bytes
-set-cookie: SERVERID=s2; path=/
+set-cookie: SERVERID=s1; path=/
 cache-control: private
 ```
 
-Under `set_cookie`, haproxy `has injected SERVERID=s2; path=/` to perserve the target backend node. 
+Under `set_cookie`, haproxy `has injected SERVERID=s1; path=/` to preserve the target backend node.
 
-!!! Note that you need to add `-c /tmp/cookie` to save the received cookie locally. 
+!!! Note that you need to add `-c /tmp/cookie` to save the received cookie locally.
 
 Subsequent requests (by attaching the just received cookie) lead to the following result:
 
@@ -554,10 +554,10 @@ $> curl -b /tmp/cookie localhost:80
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>web02</title>
+    <title>web01</title>
   </head>
   <body>
-    {"backend_host": "web02"}
+    {"backend_host": "web01"}
   </body>
 </html>
 
@@ -567,10 +567,10 @@ $> curl -b /tmp/cookie localhost:80
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>web02</title>
+    <title>web01</title>
   </head>
   <body>
-    {"backend_host": "web02"}
+    {"backend_host": "web01"}
   </body>
 </html>
 
@@ -580,28 +580,28 @@ $> curl -b /tmp/cookie localhost:80
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>web02</title>
+    <title>web01</title>
   </head>
   <body>
-    {"backend_host": "web02"}
+    {"backend_host": "web01"}
   </body>
 </html>
 ```
 
 !!! Note that you need to add `-b /tmp/cookie` to attach the just received cookie to the request.
 
-As you can see, managing persistence between client and server is an easy thing in HAProxy. 
+As you can see, managing persistence between client and server is an easy thing in HAProxy.
 If you want to have more information on that topic, just have a look at this great blog post: [Load Balancing, Affinity, Persistence, Sticky Sessions: What You Need to Know](https://www.haproxy.com/de/blog/load-balancing-affinity-persistence-sticky-sessions-what-you-need-to-know/)
 
-! Please be aware of that this method of achieving persistence has several  downsides in comparision to (web)-application-managed session persistence/affinity. The blog post above introduces some of the downsides.
+! Please be aware of that this method of achieving persistence has several downsides in comparison to (web)-application-managed session persistence/affinity. The blog post above introduces some of the downsides.
 
 ## HAProxy Data Plane API (5)
 
-In the following, we will dynamically update the HAProxy configuration. 
+In the following, we will dynamically update the HAProxy configuration.
 For this, we need to prepare HAProxy first.
 After that, we will work with the Data Plane API and create, read, update, and delete new servers in the **backend** area.
 
-### Preparation
+### HAProxy DATA Plane Preparation
 
 At first, stop `haproxy`again and edit `haproxy.cfg` once again.
 
@@ -615,9 +615,10 @@ program api
   command /usr/bin/dataplaneapi --host 0.0.0.0 --port 5555 --haproxy-bin /usr/sbin/haproxy --config-file /usr/local/etc/haproxy/haproxy.cfg --reload-cmd "kill -SIGUSR2 1" --reload-delay 5 --userlist haproxy-dataplaneapi
   no option start-on-reload
 ```
+
 !! Do not use this in production. It is never a good idea to use plain passwords in configuration files. Secondly, we are going to expose the Data Plane API publicly. This should be done in an isolated network, or at least bound to localhost only.
 
-In the next step, we need to modify our `haproxy` service. 
+In the next step, we need to modify our `haproxy` service.
 In detail, we are required to expose port `5555` besides the already exposed port `80`.
 Corresponding part in `docker-compose.yaml:
 
@@ -639,14 +640,14 @@ Start `haproxy` again with `docker-compose up -d`.
 ### Use the API
 
 In the following, we will work with the previously configured API. We use curl to perform HTTP/REST requests to get the information.
-This allows us to understand how the API is structured and how it is working. 
+This allows us to understand how the API is structured and how it is working.
 Later on, you can use the API programmatically, for example, by performing requests via Python or Java.
 We will handle the following operation:
 
 * Get all backends
 * Get all defined servers from a particular backend
 * Delete a server from a particular backend
-* Create a server in a particular backend 
+* Create a server in a particular backend
 
 #### Get all Backends
 
@@ -654,7 +655,7 @@ We will handle the following operation:
 $> curl --get --user admin:password http://localhost:5555/v2/services/haproxy/configuration/backends
 
 {
-   "_version":2,
+   "_version":1,
    "data":[
       {
          "balance":{
@@ -677,7 +678,7 @@ Query the API again, take `web-backend` as an argument for `backend` (that is th
 $> curl --get --user admin:password http://localhost:5555/v2/services/haproxy/configuration/servers?backend=web-backend
 
 {
-   "_version":2,
+   "_version":1,
    "data":[
       {
          "address":"web01",
@@ -708,17 +709,17 @@ $> curl --get --user admin:password http://localhost:5555/v2/services/haproxy/co
 Now, we will delete server `s3` from the backend section.
 
 ```bash
-$> curl -X DELETE --user admin:password "http://localhost:5555/v2/services/haproxy/configuration/servers/s3?backend=web-backend&version=2"
-No Response.
+$> curl -X DELETE --user admin:password "http://localhost:5555/v2/services/haproxy/configuration/servers/s3?backend=web-backend&version=1"
+Intentionally, no response after a DELETE.
 ```
 
-!!! Make sure that you pass a vaild value for `name`, `backend`, and `version`. Especially `version` must match the current version of the `haproxy` configuration. To obtain the up-to-date `version`, I highly recommend performing a prior read request, as shown in the example before.
+!!! Make sure that you pass a valid value for `name`, `backend`, and `version`. Especially `version` must match the current version of the `haproxy` configuration. To obtain the up-to-date `version`, I highly recommend performing a prior read request, as shown in the example before.
 
 ```bash
 $> curl --get --user admin:password http://localhost:5555/v2/services/haproxy/configuration/servers?backend=web-backend
 
 {
-   "_version":3,
+   "_version":2,
    "data":[
       {
          "address":"web01",
@@ -736,14 +737,14 @@ $> curl --get --user admin:password http://localhost:5555/v2/services/haproxy/co
 }
 ```
 
-!!!! We successfully removed server `s3`. Futhermore, we can find that `version` has increased by one due to our update. 
+!!!! We successfully removed server `s3`. Futhermore, we can find that `version` has increased by one due to our update.
 
-#### Create a New Server 
+#### Create a New Server
 
-Lastly, we will add a new server (namely `s3`which was just removed).
+Lastly, we will add a new server (namely `s3` which was just removed).
 
 ```bash
-$> curl -X POST --user admin:password -H "Content-Type: application/json" -d '{"name": "s3", "address": "web03", "port": 80}' "http://localhost:5555/v2/services/haproxy/configuration/servers?backend=web-backend&version=3"
+$> curl -X POST --user admin:password -H "Content-Type: application/json" -d '{"name": "s3", "address": "web03", "port": 80}' "http://localhost:5555/v2/services/haproxy/configuration/servers?backend=web-backend&version=2"
 
 {
    "address":"web03",
@@ -755,13 +756,13 @@ $> curl -X POST --user admin:password -H "Content-Type: application/json" -d '{"
 
 !!! Make sure you are trying to add valid data to the request and that the `version` is equal to the up-to-date `version`.
 
-Verfiy the result:
+Verify the result:
 
 ```bash
 $> curl --get --user admin:password http://localhost:5555/v2/services/haproxy/configuration/servers?backend=web-backend
 
 {
-   "_version":4,
+   "_version":3,
    "data":[
       {
          "address":"web01",
