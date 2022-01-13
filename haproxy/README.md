@@ -5,6 +5,7 @@ Related blog posts and documentations:
 * [The New HAProxy Data Plane API: Two Examples of Programmatic Configuration](https://www.haproxy.com/blog/new-haproxy-data-plane-api/)
 * [Dynamic Configuration with the HAProxy Runtime API](https://www.haproxy.com/blog/dynamic-configuration-haproxy-runtime-api/)
 * [haproxytech/haproxy-docker-alpine](https://github.com/haproxytech/haproxy-docker-alpine)
+* [HAProxy API](https://www.haproxy.com/documentation/hapee/2-2r1/api/)
 
 **Summary.**
 In this article, we deploy HAProxy, a popular load-balancer and proxy server for TCP and HTTP-based applications.
@@ -794,5 +795,5 @@ In this tutorial, we built a very basic load-balancing architecture with Docker,
 In addition, we configured the HAProxy's Data Plane API to modify the configuration during runtime and without.
 Finally, a few remarks:
 
-* There are lot of other possibilities HAProxy's Data Plane API. We only covered the most important ones API queries.
+* There are lot of other possibilities HAProxy's Data Plane API. We only covered the most important ones API queries. Get the full [HAProxy API](https://www.haproxy.com/documentation/hapee/2-2r1/api/).
 * This guide is not really usable for production environments. For example, we exposed the Data Plane API to public and used an insecure plain-text password. If you want to run everything in production, you need to introduce network isolation. Furthermore, everything was performed on one single machine. Usually, load balancers and backend nodes are distributed over a large set of independent machines.
