@@ -105,6 +105,8 @@ class MqttClient(threading.Thread):
             self.client.subscribe(topic_cpuLoadSvc_cpuLoadJob_delete_req, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
             
     def on_disconnect(self, client, userdata, rc):
+        self.client._password = create_gcp_jwt()
+        self.logger.error('creating jwt again: ' + str(self.client._password))
         if (rc != 0):
            self.logger.error('Unexpected disconnect: ' + str(rc))
 
