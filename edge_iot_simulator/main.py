@@ -27,7 +27,7 @@ if __name__=="__main__":
     consumer_queue = queue.Queue()
 
     publisher = MqttClient(publisher_queue, consumer_queue)
-    temperature_svc = TemperatureService(publisher_queue, 3, TemperatureUnits.celsius.name)
+    temperature_svc = TemperatureService(publisher_queue, 30, TemperatureUnits.celsius.name)
     cpu_load_svc = CPULoadService(publisher_queue)
     web_app = WebApp(publisher, temperature_svc, cpu_load_svc)
     message_broker = MessageBroker(consumer_queue, publisher_queue, cpu_load_svc)
