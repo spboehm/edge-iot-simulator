@@ -59,24 +59,25 @@
               <p>Published messages: {{ MqttStatistics.message_counter }} </p>
           </div>
       </div>
-<script>
-    function myFunction() {
-        total_simulation_time = 0;
-        const start = Date.now();
-        const interactions = 10;
-        for (let i = 0; i < interactions; i++) {
+    </div>
+    <script>
+        function myFunction() {
+            total_simulation_time = 0;
             const start = Date.now();
-            fetch('http://localhost:5000/temperature').then(function(response) {
-                return response.json();
-                }).then(function(data) {
-                    console.log(data);
-                }).catch(function() {
-                    console.log("An error occurred!");
-                });
-            const millis = Date.now() - start;
-            total_simulation_time = total_simulation_time + millis
-        }
-        document.getElementById('latency').value = total_simulation_time / interactions;
-    };
-</script>   
+            const interactions = 10;
+            for (let i = 0; i < interactions; i++) {
+                const start = Date.now();
+                fetch('https://localhost:8087/temperature').then(function(response) {
+                    return response.json();
+                    }).then(function(data) {
+                        console.log(data);
+                    }).catch(function() {
+                        console.log("An error occurred!");
+                    });
+                const millis = Date.now() - start;
+                total_simulation_time = total_simulation_time + millis
+            }
+            document.getElementById('latency').value = total_simulation_time / interactions;
+        };
+    </script>
 </body>

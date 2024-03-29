@@ -33,13 +33,15 @@ class MqttClient(threading.Thread):
         if (os.getenv('MQTT_USERNAME') is not None and os.getenv('MQTT_PASSWORD') is not None):
             client.username_pw_set(username=os.getenv('MQTT_USERNAME'), password=os.getenv('MQTT_PASSWORD'))
         if(os.getenv('MQTT_TLS') == 'True'):
-            ca_certs = os.getenv('MQTT_CA_CERTS') if os.getenv('MQTT_CA_CERTS') is not None else None
-            certfile = os.getenv('MQTT_CERTFILE') if os.getenv('MQTT_CERTFILE') is not None else None
-            keyfile = os.getenv('MQTT_KEYFILE') if os.getenv('MQTT_KEYFILE') is not None else None
-            cert_reqs = ssl.CERT_REQUIRED if os.getenv('MQTT_CERT_REQ') == 'True' else ssl.CERT_OPTIONAL
+            ca_certs = os.getenv('MQTT_CA_CERTS', default=None)
+            certfile = os.getenv('MQTT_CERTFILE', default=None)
+            keyfile = os.getenv('MQTT_KEYFILE', default=None)
+            cert_reqs = ssl.CERT_REQUIRED if os.getenv('MQTT_CERT_REQ') == 'True' else ssl.CERT_NONE
 
+            print(type(ca_certs))
+            
             client.tls_set(ca_certs=ca_certs, certfile=certfile, keyfile=keyfile, cert_reqs=cert_reqs, tls_version=ssl.PROTOCOL_TLSv1_2)
-
+            #client.tls_set(cert_reqs=cert_reqs, tls_version=ssl.PROTOCOL_TLSv1_2)
             if (os.getenv('MQTT_TLS_INSECURE') == 'True'):
                 client.tls_insecure_set(True)
         client.on_connect = self.on_connect

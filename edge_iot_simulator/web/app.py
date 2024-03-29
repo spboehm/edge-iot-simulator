@@ -19,7 +19,7 @@ class WebApp(threading.Thread):
     def __init__(self, publisher, temperature_svc, cpu_load_svc):
         threading.Thread.__init__(self)
         app = self.create_app(publisher, temperature_svc, cpu_load_svc)
-        self.srv = make_server('0.0.0.0', 5000, app, ssl_context='adhoc')
+        self.srv = make_server('0.0.0.0', 8087, app, ssl_context='adhoc')
         self.ctx = app.app_context()
         self.ctx.push()
         self.logger = logging.getLogger(__name__)

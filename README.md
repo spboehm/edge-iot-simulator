@@ -269,7 +269,7 @@ NOTE:
 
 ## Run the project locally
 
-* Install necessary packages: `sudo apt-get install python3-flask python3-venv python3-wheel`
+* Install necessary packages: `sudo apt-get install python3-devel python3-flask python3-venv python3-wheel`
 * Clone/Pull this repository: `git clone https://gitlab.rz.uni-bamberg.de/sebastian.boehm/edge-iot-simulator`
 * Go into the root directory of the repository, switch then to (`cd edge_iot_simulator`)
 * Create the env file `.env` with the contents above and change the values according to your needs. Alternatively, you can copy the `.env-example` with `cp .env-example .env`. DO NOT FORGET TO ALTER THE SENSITIVE VARIABLES!!!
@@ -358,7 +358,7 @@ To run edge-IoT simulator with docker, do the following:
 * Build the image: `sudo docker build -t edge-iot-simulator:1.0 .`
 * Change the working directory to the directory: `cd edge_iot_simulator`
 * Create and adjust the `.env` file! **Make sure that you take the right IP address for the message broker. If you are running the mqtt broker on the same system (physical host), obtain the broker's ip address via `sudo docker inspect <containername>`**.
-* Run the image: `sudo docker run -p 5000:5000 --env-file=.env edge-iot-simulator:1.0`, choose `sudo docker run -d -p 5000:5000 --env-file=.env edge-iot-simulator:1.0`
+* Run the image: `sudo docker run -p 8087:8087 --env-file=.env edge-iot-simulator:1.0`, choose `sudo docker run -d -p 8087:8087 --env-file=.env edge-iot-simulator:1.0`
 
 ```bash
 -----------------------localhost----------------------
