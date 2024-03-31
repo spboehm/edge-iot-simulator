@@ -32,6 +32,7 @@ class RequestService(threading.Thread):
         self.job_count = 0
         self.requestJobRunner = None
         self.current_job_id = None
+        self.e = threading.Event()
 
 
     def run(self):
@@ -76,12 +77,8 @@ class RequestService(threading.Thread):
                 duration = self.request(new_queued_request_job.destinationHost, new_queued_request_job.resource, new_queued_request_job.count)
                 requestMetric = RequestMetric(new_queued_request_job.destinationHost, new_queued_request_job.resource, duration, "ms")
                 self.create_mqtt_message(requestMetric)
-                time.sleep(new_queued_request_job.recurrence)
+                self.e.wait(timeout=new_queued_request_job.recurrence)
 
-
-
-    
-        
     def request(self, destinationHost, resource, count):
         startTime = getTimeStamp()
         for i in range(count):
@@ -99,7 +96,7 @@ class RequestService(threading.Thread):
         self.publisher_queue.put(MqttMessage("dt/pulceo/requests", requestMetric.to_json()))
 
     def stop(self):
-        self.logger.info('CPU load service received shutdown signal...')
+        self.logger.info('Request service received shutdown signal...')
         while not self.input_queue.empty():
             self.input_queue.get()
         self.input_queue.put('shutdown')
@@ -107,6 +104,7 @@ class RequestService(threading.Thread):
             self.requestJobQueue.get()
         self.requestJobQueue.put('shutdown')
         self.exit_event.set()
+        self.e.set()
         self.requestJobRunner.join()
 
 class RequestJob():
