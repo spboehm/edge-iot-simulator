@@ -21,7 +21,7 @@ if __name__=="__main__":
 
 
     parser = argparse.ArgumentParser(description='Edge-IoT Simulator')
-    parser.add_argument('--service', metavar='S', choices=('temperature_svc', 'cpu_load_svc', 'all'), default='all', type=str, nargs='?', help='State the service you would like to start...')
+    parser.add_argument('--service', metavar='S', choices=('temperature_svc', 'cpu_load_svc', 'request_svc', 'all'), default='all', type=str, nargs='?', help='State the service you would like to start...')
     args = parser.parse_args()
 
     publisher_queue = queue.Queue()

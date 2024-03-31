@@ -77,6 +77,10 @@ class RequestService(threading.Thread):
                 requestMetric = RequestMetric(new_queued_request_job.destinationHost, new_queued_request_job.resource, duration, "ms")
                 self.create_mqtt_message(requestMetric)
                 time.sleep(new_queued_request_job.recurrence)
+
+
+
+    
         
     def request(self, destinationHost, resource, count):
         startTime = getTimeStamp()
