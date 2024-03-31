@@ -38,6 +38,11 @@ if topic_cpuLoadSvc_cpuLoadJob_delete_res is None or len(topic_cpuLoadSvc_cpuLoa
     topic_cpuLoadSvc_cpuLoadJob_delete_res = "/".join([os.getenv('MQTT_TOPIC_SERVICES'), os.getenv('MQTT_TOPIC_CPU_LOAD_SERVICE'), os.getenv(
     'MQTT_CLIENT_ID'), os.getenv('MQTT_TOPIC_CPU_LOAD_SERVICE_DATA'), os.getenv('MQTT_TOPIC_RES_TYPE_DELETE')])
 
+# request_svc
+topic_requestSvc_requestJob_create_req = "/".join([os.getenv('MQTT_TOPIC_SERVICES'), os.getenv('MQTT_TOPIC_REQUEST_SERVICE'), os.getenv(
+    'MQTT_CLIENT_ID'), os.getenv('MQTT_TOPIC_REQUEST_SERVICE_DATA'), os.getenv('MQTT_TOPIC_REQ_TYPE_CREATE')])
+print(topic_requestSvc_requestJob_create_req)
+
 # mqtt_client
 topic_mqtt_client_publisher_state = os.getenv('CUSTOM_MQTT_CLIENT_PUBLISHER_STATE')
 if topic_mqtt_client_publisher_state is None or len(topic_mqtt_client_publisher_state) < 1:

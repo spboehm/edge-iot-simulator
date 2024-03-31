@@ -68,7 +68,6 @@ class WebApp(threading.Thread):
             return render_template('dashboard.html', TemperatureMeasurement=temperature_svc.get_temperature(TemperatureUnits.celsius.name), MqttStatistics=publisher.get_mqtt_statistics())
 
         @app.route("/temperature")
-        @auth_required()
         def get_temperature():
             return temperature_svc.get_temperature(TemperatureUnits.celsius.name).to_string()
         

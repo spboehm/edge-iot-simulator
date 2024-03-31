@@ -2,6 +2,7 @@
 import argparse
 from core.temperature_svc import TemperatureMeasurement, TemperatureService,TemperatureUnits
 from core.cpu_load_svc import CPULoadJobAllCores, CPULoadService
+from core.request_svc import RequestService
 from messaging.mqtt_client import MqttException, MqttClient, MqttStatus, MessageBroker
 from web.app import WebApp
 
@@ -29,6 +30,7 @@ if __name__=="__main__":
     publisher = MqttClient(publisher_queue, consumer_queue)
     temperature_svc = TemperatureService(publisher_queue, 30, TemperatureUnits.celsius.name)
     cpu_load_svc = CPULoadService(publisher_queue)
+    request_svc = RequestService(publisher_queue)
     web_app = WebApp(publisher, temperature_svc, cpu_load_svc)
     message_broker = MessageBroker(consumer_queue, publisher_queue, cpu_load_svc)
 
@@ -39,6 +41,8 @@ if __name__=="__main__":
             temperature_svc.start()
         if vars(args)['service'] == "cpu_load_svc" or vars(args)['service'] == "all":
             cpu_load_svc.start()
+        if vars(args)['service'] == "request_svc" or vars(args)['service'] == "all":
+            request_svc.start()
         web_app.start()
         message_broker.start()
         time.sleep(5) # wait for connection to mqtt broker
@@ -55,6 +59,8 @@ if __name__=="__main__":
             temperature_svc.stop()
         if vars(args)['service'] == "cpu_load_svc" or vars(args)['service'] == "all":
             cpu_load_svc.stop()
+        if vars(args)['service'] == "request_svc" or vars(args)['service'] == "all":
+            request_svc.stop()
         web_app.stop()
         message_broker.stop()
 
@@ -65,6 +71,8 @@ if __name__=="__main__":
             temperature_svc.join()
         if vars(args)['service'] == "cpu_load_svc" or vars(args)['service'] == "all":
             cpu_load_svc.join()
+        if vars(args)['service'] == "request_svc" or vars(args)['service'] == "all":
+            request_svc.join()
         web_app.join()
         message_broker.join()
 
