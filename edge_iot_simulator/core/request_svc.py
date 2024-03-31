@@ -7,6 +7,9 @@ import uuid
 import os
 import json
 from messaging.mqtt_client import MqttMessage
+import multiprocessing
+from multiprocessing import process
+from multiprocessing.sharedctypes import Value
 
 logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 
@@ -23,6 +26,7 @@ class RequestService(threading.Thread):
         self.lock = threading.RLock()
         self.exit_event = threading.Event()
         self.logger = logging.getLogger(__name__)
+        self.proc = None
         self.requestJobQueue = queue.Queue()
         self.requestJobHistory = {}
         self.job_count = 0
@@ -46,8 +50,11 @@ class RequestService(threading.Thread):
                 self.logger.error('Unknown message received!')
 
             self.logger.info('Received new RequestJob: {}'.format(new_request_job.to_string()))
-            while self.lock:
+            with self.lock:
                 self.job_count += 1
+                # TODO: QueuesJob
+                # TODO: history
+                self.requestJobQueue.put(new_request_job)
 
     def run_request_job(self):
         self.logger.debug('Successfully started RequestJobRunner...')
@@ -57,19 +64,19 @@ class RequestService(threading.Thread):
 
             if (isinstance(item, RequestJob)):
                 new_queued_request_job = item
-                self.logger.info('Received new QueuedCPULoadJobAllCores: {}'.format(new_queued_request_job.to_string()))      
+                self.logger.info('Received new RequestJob: {}'.format(new_queued_request_job.to_string()))      
             elif (item == 'shutdown'):
                 return
             else:
                 self.logger.error('Unknown message received!')
         
-        # send request
-        while not self.exit_event.is_set():
-            self.logger.info('Started new RequestJob {}'.format(new_queued_request_job.to_string()))
-            duration = self.request(new_queued_request_job.destinationHost, new_queued_request_job.resource, new_queued_request_job.count)
-            requestMetric = RequestMetric(new_queued_request_job.destinationHost, new_queued_request_job.resource, duration, "ms")
-            self.create_mqtt_message(requestMetric)
-            time.sleep(new_queued_request_job.recurrence)
+            while not self.exit_event.is_set():
+                # send request
+                self.logger.info('Started new RequestJob {}'.format(new_queued_request_job.to_string()))
+                duration = self.request(new_queued_request_job.destinationHost, new_queued_request_job.resource, new_queued_request_job.count)
+                requestMetric = RequestMetric(new_queued_request_job.destinationHost, new_queued_request_job.resource, duration, "ms")
+                self.create_mqtt_message(requestMetric)
+                time.sleep(new_queued_request_job.recurrence)
         
     def request(self, destinationHost, resource, count):
         startTime = getTimeStamp()
@@ -85,7 +92,7 @@ class RequestService(threading.Thread):
         return new_request_job
     
     def create_mqtt_message(self, requestMetric):
-        self.queue.put(MqttMessage("dt/pulceo/requests", requestMetric.to_json()))
+        self.publisher_queue.put(MqttMessage("dt/pulceo/requests", requestMetric.to_json()))
 
     def stop(self):
         self.logger.info('CPU load service received shutdown signal...')

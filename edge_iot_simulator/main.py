@@ -32,7 +32,7 @@ if __name__=="__main__":
     cpu_load_svc = CPULoadService(publisher_queue)
     request_svc = RequestService(publisher_queue)
     web_app = WebApp(publisher, temperature_svc, cpu_load_svc)
-    message_broker = MessageBroker(consumer_queue, publisher_queue, cpu_load_svc)
+    message_broker = MessageBroker(consumer_queue, publisher_queue, cpu_load_svc, request_svc)
 
     try:
         logging.info('Start Edge-IoT Simulator...')

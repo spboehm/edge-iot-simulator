@@ -43,6 +43,9 @@ topic_requestSvc_requestJob_create_req = "/".join([os.getenv('MQTT_TOPIC_SERVICE
     'MQTT_CLIENT_ID'), os.getenv('MQTT_TOPIC_REQUEST_SERVICE_DATA'), os.getenv('MQTT_TOPIC_REQ_TYPE_CREATE')])
 print(topic_requestSvc_requestJob_create_req)
 
+topic_requestSvc_requestJob_create_res = "/".join([os.getenv('MQTT_TOPIC_SERVICES'), os.getenv('MQTT_TOPIC_REQUEST_SERVICE'), os.getenv(
+    'MQTT_CLIENT_ID'), os.getenv('MQTT_TOPIC_REQUEST_SERVICE_DATA'), os.getenv('MQTT_TOPIC_RES_TYPE_CREATE')])
+
 # mqtt_client
 topic_mqtt_client_publisher_state = os.getenv('CUSTOM_MQTT_CLIENT_PUBLISHER_STATE')
 if topic_mqtt_client_publisher_state is None or len(topic_mqtt_client_publisher_state) < 1:

@@ -59,6 +59,7 @@ class MqttClient(threading.Thread):
         self.client.subscribe(topic_cpuLoadSvc_cpuLoadJob_create_req, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
         self.client.subscribe(topic_cpuLoadSvc_cpuLoadJob_read_req, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
         self.client.subscribe(topic_cpuLoadSvc_cpuLoadJob_delete_req, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
+        self.client.subscribe(topic_requestSvc_requestJob_create_req, int(os.getenv('MQTT_SUBSCRIBE_QOS')))
 
     def on_disconnect(self, client, userdata, rc):
         if (rc != 0):
@@ -115,13 +116,14 @@ class MqttClient(threading.Thread):
 
 class MessageBroker(threading.Thread):
 
-    def __init__(self, consumer_queue, publisher_queue, cpu_load_svc):
+    def __init__(self, consumer_queue, publisher_queue, cpu_load_svc, request_svc):
         threading.Thread.__init__(self)
         self.logger = logging.getLogger(__name__)
         self.consumer_queue = consumer_queue
         self.lock = threading.Lock()
         self.exit_event = threading.Event()
         self.cpu_load_svc = cpu_load_svc
+        self.request_svc = request_svc
         self.publisher_queue = publisher_queue
 
     def run(self):
@@ -147,7 +149,7 @@ class MessageBroker(threading.Thread):
                         else:
                             created_cpu_load_job = self.cpu_load_svc.create_cpu_load_job(json_cpu_load_job_all_cores['duration'], json_cpu_load_job_all_cores['target_load'])
                             self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_create_res, MqttSuccessMessage(created_cpu_load_job).to_json()))
-
+                
                 elif (mqtt_message.topic == topic_cpuLoadSvc_cpuLoadJob_read_req):
                     response_topic = topic_cpuLoadSvc_cpuLoadJob_read_res
                     self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_read_res, MqttSuccessMessage(self.cpu_load_svc.get_cpu_load_job_history()).to_json()))
@@ -161,6 +163,12 @@ class MessageBroker(threading.Thread):
                     if (json_cpu_load_job_delete_req['id'] is None ):
                         raise ValueError('id is missing')
                     self.publisher_queue.put(MqttMessage(topic_cpuLoadSvc_cpuLoadJob_delete_res, MqttSuccessMessage(self.cpu_load_svc.delete_cpu_load_job_by_id(json_cpu_load_job_delete_req['id'])).to_json()))
+                
+                elif (mqtt_message.topic == topic_requestSvc_requestJob_create_req):
+                    response_topic = topic_requestSvc_requestJob_create_res
+                    json_request_job = json.loads(mqtt_message.payload.decode())
+                    created_request_job = self.request_svc.create_request_job(json_request_job['destinationHost'], json_request_job['resource'], json_request_job['count'], json_request_job['recurrence'])
+                    self.publisher_queue.put(MqttMessage(topic_requestSvc_requestJob_create_res, MqttSuccessMessage(created_request_job).to_json()))
 
             except (ValueError, JSONDecodeError, KeyError) as e:
                 error_message = 'Illegal message received: ' + str(e)
