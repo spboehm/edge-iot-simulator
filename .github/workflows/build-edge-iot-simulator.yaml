@@ -14,6 +14,8 @@ jobs:
       contents: read
       packages: write
     steps:
+      - name: Check out the repository to the runner
+        uses: actions/checkout@v4
       - run: cp edge_iot_simulator/.env-example edge_iot_simulator/.env
       - name: Log in to the Container registry
         uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
