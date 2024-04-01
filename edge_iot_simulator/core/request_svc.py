@@ -74,10 +74,10 @@ class RequestService(threading.Thread):
             while not self.exit_event.is_set():
                 # send request
                 self.logger.info('Started new RequestJob {}'.format(new_queued_request_job.to_string()))
-                duration = self.request(new_queued_request_job.destinationHost, new_queued_request_job.resource, new_queued_request_job.count)
+                duration = self.request(new_queued_request_job.destinationHost, new_queued_request_job.resource, int(new_queued_request_job.count))
                 requestMetric = RequestMetric(new_queued_request_job.destinationHost, new_queued_request_job.resource, duration, "ms")
                 self.create_mqtt_message(requestMetric)
-                self.e.wait(timeout=new_queued_request_job.recurrence)
+                self.e.wait(timeout=int(new_queued_request_job.recurrence))
 
     def request(self, destinationHost, resource, count):
         startTime = getTimeStamp()

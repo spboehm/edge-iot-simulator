@@ -38,8 +38,6 @@ class MqttClient(threading.Thread):
             keyfile = os.getenv('MQTT_KEYFILE', default=None)
             cert_reqs = ssl.CERT_REQUIRED if os.getenv('MQTT_CERT_REQ') == 'True' else ssl.CERT_NONE
 
-            print(type(ca_certs))
-            
             client.tls_set(ca_certs=ca_certs, certfile=certfile, keyfile=keyfile, cert_reqs=cert_reqs, tls_version=ssl.PROTOCOL_TLSv1_2)
             #client.tls_set(cert_reqs=cert_reqs, tls_version=ssl.PROTOCOL_TLSv1_2)
             if (os.getenv('MQTT_TLS_INSECURE') == 'True'):

@@ -1,0 +1,2 @@
+sourceHost,topic,destinationHost,resource,count,recurrence
+localhost,edge-1-edge-iot-simulator,https://127.0.0.1:8087,/temperature,10,60
