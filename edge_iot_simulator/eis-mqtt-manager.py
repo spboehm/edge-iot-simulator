@@ -8,6 +8,9 @@ import random
 import time
 import ssl
 import requests
+import json
+import urllib.request, json 
+
 
 broker = os.getenv('MQTT_SERVER_NAME')
 port = int(os.getenv('MQTT_PORT'))
@@ -43,29 +46,38 @@ if __name__ == '__main__':
         request_jobs_as_csv = csv.DictReader(csv_file, delimiter=',')
         for request_job in request_jobs_as_csv:
             request_jobs.append(request_job)
+    
 
+    nodeName_host_dict = {}
+    # open applications.json
+    with urllib.request.urlopen("http://localhost:8081/api/v1/applications") as url:
+        applications_json = json.load(url)
+        for application in applications_json:
+            nodeName_host_dict[application['name']] = application['endpoint']
+    
     # check availability of eis
     for request_job in request_jobs:
-        r = requests.get(request_job['destinationHost'] + request_job['resource'], verify=False)
+        r = requests.get(nodeName_host_dict[request_job['destinationHost'] + '-edge-iot-simulator'] + request_job['resource'], verify=False)
         if r.status_code == 200:
-            print('Host ' + request_job['destinationHost'] + ' available with code ' + str(r.status_code))
+            print('Host ' + nodeName_host_dict[request_job['destinationHost'] + '-edge-iot-simulator'] + ' available with code ' + str(r.status_code))
         else:
-            print('Host ' + request_job['destinationHost'] + ' NOT available with code ' + str(r.status_code))
+            print('Host ' + nodeName_host_dict[request_job['destinationHost'] + '-edge-iot-simulator'] + ' NOT available with code ' + str(r.status_code))
             exit(1)
     
     client = connect_mqtt()
     client.loop_start()
 
-    time.sleep(10)
+    time.sleep(5)
 
     # publish requests
+    print(nodeName_host_dict)
     seq = 0
     for request_job in request_jobs:
-        mqtt_client_id = request_job['topic']
+        mqtt_client_id = request_job['sourceHost'] + '-' + request_job['topic']
         topic = f'services/requestSvc/{mqtt_client_id}/jobs/create/req'
-        request_job = RequestJob(request_job['destinationHost'], request_job['resource'], request_job['count'], request_job['recurrence'])
-        client.publish(topic, request_job.to_json())
-        print('Sent RequestJob ' + request_job.to_json() + ' to ' + topic)
+        created_request_job = RequestJob(nodeName_host_dict[request_job['destinationHost'] + '-edge-iot-simulator'], request_job['resource'], request_job['count'], request_job['recurrence'])
+        client.publish(topic, created_request_job.to_json())
+        print('Sent RequestJob ' + created_request_job.to_json() + ' to ' + topic)
         time.sleep(seq * 15)
         seq += 1
 
