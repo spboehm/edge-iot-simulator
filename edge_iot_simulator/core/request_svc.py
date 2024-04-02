@@ -70,14 +70,19 @@ class RequestService(threading.Thread):
                 return
             else:
                 self.logger.error('Unknown message received!')
-        
-            while not self.exit_event.is_set():
+
+            # TODO: fork
+            forked_request_job = threading.Thread(target=self.fork_request_job, args=(new_queued_request_job,))
+            forked_request_job.start()
+
+    def fork_request_job(self, new_queued_request_job):
+        while not self.exit_event.is_set():
                 # send request
-                self.logger.info('Started new RequestJob {}'.format(new_queued_request_job.to_string()))
-                duration = self.request(new_queued_request_job.destinationHost, new_queued_request_job.resource, int(new_queued_request_job.count))
-                requestMetric = RequestMetric(new_queued_request_job.destinationHost, new_queued_request_job.resource, duration, "ms")
-                self.create_mqtt_message(requestMetric)
-                self.e.wait(timeout=int(new_queued_request_job.recurrence))
+            self.logger.info('Started new RequestJob {}'.format(new_queued_request_job.to_string()))
+            duration = self.request(new_queued_request_job.destinationHost, new_queued_request_job.resource, int(new_queued_request_job.count))
+            requestMetric = RequestMetric(new_queued_request_job.destinationHost, new_queued_request_job.resource, duration, "ms")
+            self.create_mqtt_message(requestMetric)
+            self.e.wait(timeout=int(new_queued_request_job.recurrence))
 
     def request(self, destinationHost, resource, count):
         startTime = getTimeStamp()
