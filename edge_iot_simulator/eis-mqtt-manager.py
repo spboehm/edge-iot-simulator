@@ -9,8 +9,8 @@ import time
 import ssl
 import requests
 import json
-import urllib.request, json 
-
+import urllib.request, json
+import argparse
 
 broker = os.getenv('MQTT_SERVER_NAME')
 port = int(os.getenv('MQTT_PORT'))
@@ -40,16 +40,27 @@ def connect_mqtt():
     return client
 
 if __name__ == '__main__':
+
+    # args
+    parser = argparse.ArgumentParser(prog='Edge-IoT-Simulator MQTT Manager')
+    parser.add_argument('-f', '--filename', required=True)
+
+    # parse args
+    args = parser.parse_args()
+    path = os.getcwd() + '/' + args.filename
+    if not os.path.isfile(path):
+        print('File ' + path + ' is not a file!')
+        exit(1)
+    
     # open csv
     request_jobs= []
-    with open(os.getcwd() + '/hosts.csv') as csv_file:
+    with open(path) as csv_file:
         request_jobs_as_csv = csv.DictReader(csv_file, delimiter=',')
         for request_job in request_jobs_as_csv:
             request_jobs.append(request_job)
     
-
+    # applications.json
     nodeName_host_dict = {}
-    # open applications.json
     with urllib.request.urlopen("http://localhost:8081/api/v1/applications") as url:
         applications_json = json.load(url)
         for application in applications_json:
@@ -70,7 +81,6 @@ if __name__ == '__main__':
     time.sleep(5)
 
     # publish requests
-    print(nodeName_host_dict)
     seq = 0
     for request_job in request_jobs:
         mqtt_client_id = request_job['sourceHost'] + '-' + request_job['topic']
@@ -78,7 +88,7 @@ if __name__ == '__main__':
         created_request_job = RequestJob(nodeName_host_dict[request_job['destinationHost'] + '-edge-iot-simulator'], request_job['resource'], request_job['count'], request_job['recurrence'])
         client.publish(topic, created_request_job.to_json())
         print('Sent RequestJob ' + created_request_job.to_json() + ' to ' + topic)
-        time.sleep(seq * 15)
+        time.sleep(seq * 5)
         seq += 1
 
     client.loop_stop()

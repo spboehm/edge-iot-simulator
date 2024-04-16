@@ -1,0 +1,10 @@
+sourceHost,topic,destinationHost,resource,count,recurrence
+fog2,edge-iot-simulator,cloud2,/temperature,1,60
+cloud2,edge-iot-simulator,cloud1,/temperature,1,60
+cloud1,edge-iot-simulator,fog1,/temperature,1,60
+fog1,edge-iot-simulator,fog3,/temperature,1,60
+gateway1,edge-iot-simulator,fog3,/temperature,1,60
+gateway1,edge-iot-simulator,fog2,/temperature,1,60
+gateway1,edge-iot-simulator,fog1,/temperature,1,60
+gateway1,edge-iot-simulator,cloud1,/temperature,1,60
+gateway1,edge-iot-simulator,cloud2,/temperature,1,60
