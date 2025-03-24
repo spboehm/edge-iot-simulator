@@ -3,9 +3,9 @@ import argparse
 from core.temperature_svc import TemperatureMeasurement, TemperatureService,TemperatureUnits
 from core.cpu_load_svc import CPULoadJobAllCores, CPULoadService
 from core.request_svc import RequestService
+from core.task_svc import TaskService
 from messaging.mqtt_client import MqttException, MqttClient, MqttStatus, MessageBroker
 from web.app import WebApp
-
 import logging
 import os
 import random
@@ -19,7 +19,6 @@ logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/
 
 if __name__=="__main__":
 
-
     parser = argparse.ArgumentParser(description='Edge-IoT Simulator')
     parser.add_argument('--service', metavar='S', choices=('temperature_svc', 'cpu_load_svc', 'request_svc', 'all'), default='all', type=str, nargs='?', help='State the service you would like to start...')
     args = parser.parse_args()
@@ -28,10 +27,14 @@ if __name__=="__main__":
     consumer_queue = queue.Queue()
 
     publisher = MqttClient(publisher_queue, consumer_queue)
+    # services
     temperature_svc = TemperatureService(publisher_queue, 30, TemperatureUnits.celsius.name)
     cpu_load_svc = CPULoadService(publisher_queue)
     request_svc = RequestService(publisher_queue)
-    web_app = WebApp(publisher, temperature_svc, cpu_load_svc)
+    task_svc = TaskService(publisher, cpu_load_svc)
+    # web app
+    web_app = WebApp(publisher, temperature_svc, cpu_load_svc, task_svc)
+    # broker
     message_broker = MessageBroker(consumer_queue, publisher_queue, cpu_load_svc, request_svc)
 
     try:
@@ -43,6 +46,8 @@ if __name__=="__main__":
             cpu_load_svc.start()
         if vars(args)['service'] == "request_svc" or vars(args)['service'] == "all":
             request_svc.start()
+        if vars(args)['service'] == "task_svc" or vars(args)['service'] == "all":
+            task_svc.start()
         web_app.start()
         message_broker.start()
         time.sleep(5) # wait for connection to mqtt broker
@@ -61,6 +66,8 @@ if __name__=="__main__":
             cpu_load_svc.stop()
         if vars(args)['service'] == "request_svc" or vars(args)['service'] == "all":
             request_svc.stop()
+        if vars(args)['service'] == "task_svc" or vars(args)['service'] == "all":
+            task_svc.stop()
         web_app.stop()
         message_broker.stop()
 
@@ -73,6 +80,8 @@ if __name__=="__main__":
             cpu_load_svc.join()
         if vars(args)['service'] == "request_svc" or vars(args)['service'] == "all":
             request_svc.join()
+        if vars(args)['service'] == "task_svc" or vars(args)['service'] == "all":
+            task_svc.join()
         web_app.join()
         message_broker.join()
 

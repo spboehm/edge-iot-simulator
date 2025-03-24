@@ -16,15 +16,15 @@ logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/
 
 class WebApp(threading.Thread):
 
-    def __init__(self, publisher, temperature_svc, cpu_load_svc):
+    def __init__(self, publisher, temperature_svc, cpu_load_svc, task_svc):
         threading.Thread.__init__(self)
-        app = self.create_app(publisher, temperature_svc, cpu_load_svc)
+        app = self.create_app(publisher, temperature_svc, cpu_load_svc, task_svc)
         self.srv = make_server('0.0.0.0', int(os.getenv('WEB_PORT')), app, ssl_context='adhoc')
         self.ctx = app.app_context()
         self.ctx.push()
         self.logger = logging.getLogger(__name__)
 
-    def create_app(self, publisher, temperature_svc, cpu_load_svc):
+    def create_app(self, publisher, temperature_svc, cpu_load_svc, task_svc):
         app = Flask(__name__)
         app.config['DEBUG'] = True
 
@@ -92,7 +92,13 @@ class WebApp(threading.Thread):
         @app.route("/device-info")
         def get_device_info():
             return json.dumps({"device-info": os.getenv('MQTT_CLIENT_ID')})
-
+        
+        @app.route("/tasks", methods=["POST"])
+        def create_task():
+            task = request.json
+            task_svc.create_task(task['uuid'])
+            return Response(status=202)
+        
         return app
 
     def run(self):
