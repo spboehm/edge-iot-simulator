@@ -55,8 +55,7 @@ class WebApp(threading.Thread):
         security = Security(app, user_datastore)
 
         # Create a user to test with
-        @app.before_first_request
-        def create_user():
+        with app.app_context():
             db.create_all()
             if not user_datastore.find_user(email=os.getenv('FLASK_WEB_USER')):
                 user_datastore.create_user(email=os.getenv('FLASK_WEB_USER'), password=hash_password(os.getenv('FLASK_WEB_PASSWORD')))
