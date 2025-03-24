@@ -54,6 +54,24 @@ class TaskService(threading.Thread):
                 self.logger.debug(f"Waiting for {wait_time} seconds to simulate processing the task.")
                 time.sleep(wait_time)
                 # TODO: refactor request
+                # TODO: add progress
+                # TODO: add comment
+                # TODO: add further properties
+                # TODO: add callback endpoint protocol
+                # TODO: add callback endpoint 
+                taskId = new_task.uuid
+                try:
+                    response = requests.put(
+                        url=f"{os.getenv('PNA_TASKS_SCHEMA', 'http')}://{os.getenv('PNA_TASKS_HOSTNAME', 'localhost')}:{os.getenv('PNA_TASKS_PORT', '7676')}{os.getenv('PNA_TASKS_BASE_URL', '/api/v1/internal/tasks')}/{taskId}",
+                        json={"taskId": taskId, "newTaskStatus": "COMPLETED"},
+                        timeout=10
+                    )
+                    if response.status_code == 202:
+                        self.logger.info(f"Task {currentTaskId} successfully processed: {response.text}")
+                    else:
+                        self.logger.error(f"Failed to process Task {currentTaskId}: {response.status_code} - {response.text}")
+                except requests.RequestException as e:
+                    self.logger.error(f"HTTP request failed for Task {currentTaskId}: {e}")
 
     def stop(self):
         while not self.input_queue.empty():
