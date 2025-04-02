@@ -50,7 +50,7 @@ class TaskService(threading.Thread):
                 # TODO: Resolve oversimplification
                 currentTaskId = self.taskCount
                 self.taskCount += 1
-                wait_time = random.uniform(0.5, 3.5)
+                wait_time = random.uniform(0.1, 1.0)
                 self.logger.debug(f"Waiting for {wait_time} seconds to simulate processing the task.")
                 time.sleep(wait_time)
                 # TODO: refactor request
