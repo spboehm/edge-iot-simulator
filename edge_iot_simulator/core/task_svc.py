@@ -60,6 +60,7 @@ class TaskService(threading.Thread):
                 # TODO: add further properties
                 taskId = new_task.uuid
                 globalTaskUUID = new_task.globalTaskUUID
+                payload = new_task.payload
 
                 try:
                     response = requests.put(
@@ -79,7 +80,7 @@ class TaskService(threading.Thread):
                 response_message = TaskResponse(
                     global_task_uuid=globalTaskUUID,
                     status="COMPLETED",
-                    message="Task processed successfully"
+                    payload=payload
                 )
                 self.create_mqtt_message(response_message)
 
@@ -94,16 +95,17 @@ class TaskService(threading.Thread):
         self.exit_event.set()
         self.logger.info('Task service received shutdown signal...')
 
-    def create_task(self, uuid, globalTaskUUID):
+    def create_task(self, uuid, globalTaskUUID, payload):
         self.logger.debug('TaskService received new task with uuid {}'.format(uuid))
-        new_task = Task(uuid, globalTaskUUID)
+        new_task = Task(uuid, globalTaskUUID, payload)
         self.input_queue.put(new_task)
         return new_task
 
 class Task():
-    def __init__(self, uuid, globalTaskUUID):
+    def __init__(self, uuid, globalTaskUUID, payload):
         self.uuid = uuid
         self.globalTaskUUID = globalTaskUUID
+        self.payload = payload
 
     def to_json(self):
         return json.dumps(self.__dict__)
@@ -112,10 +114,10 @@ class Task():
         return str(self.to_json())
 
 class TaskResponse:
-    def __init__(self, global_task_uuid, status, message=None):
+    def __init__(self, global_task_uuid, status, payload=None):
         self.globalTaskUUID = global_task_uuid
         self.status = status
-        self.message = message
+        self.payload = payload
 
     def to_json(self):
         return json.dumps(self.__dict__)
