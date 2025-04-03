@@ -96,7 +96,7 @@ class WebApp(threading.Thread):
         @app.route("/tasks", methods=["POST"])
         def create_task():
             task = request.json
-            task_svc.create_task(task['uuid'])
+            task_svc.create_task(task['uuid'], task['globalTaskUUID'])
             return Response(status=202)
         
         return app

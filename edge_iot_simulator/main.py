@@ -31,7 +31,7 @@ if __name__=="__main__":
     temperature_svc = TemperatureService(publisher_queue, 30, TemperatureUnits.celsius.name)
     cpu_load_svc = CPULoadService(publisher_queue)
     request_svc = RequestService(publisher_queue)
-    task_svc = TaskService(publisher, cpu_load_svc)
+    task_svc = TaskService(publisher_queue, cpu_load_svc)
     # web app
     web_app = WebApp(publisher, temperature_svc, cpu_load_svc, task_svc)
     # broker

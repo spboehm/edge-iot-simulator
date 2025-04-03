@@ -13,6 +13,7 @@ from typing import ValuesView
 import requests
 import queue
 import random
+from messaging.mqtt_client import MqttMessage
 
 logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 
@@ -57,9 +58,9 @@ class TaskService(threading.Thread):
                 # TODO: add progress
                 # TODO: add comment
                 # TODO: add further properties
-                # TODO: add callback endpoint protocol
-                # TODO: add callback endpoint 
                 taskId = new_task.uuid
+                globalTaskUUID = new_task.globalTaskUUID
+
                 try:
                     response = requests.put(
                         url=f"{os.getenv('PNA_TASKS_SCHEMA', 'http')}://{os.getenv('PNA_TASKS_HOSTNAME', 'localhost')}:{os.getenv('PNA_TASKS_PORT', '7676')}{os.getenv('PNA_TASKS_BASE_URL', '/api/v1/internal/tasks')}/{taskId}",
@@ -73,6 +74,18 @@ class TaskService(threading.Thread):
                 except requests.RequestException as e:
                     self.logger.error(f"HTTP request failed for Task {currentTaskId}: {e}")
 
+                # TODO: add callback endpoint protocol
+                # TODO: add callback endpoint (hard-coded so far)
+                response_message = TaskResponse(
+                    global_task_uuid=globalTaskUUID,
+                    status="COMPLETED",
+                    message="Task processed successfully"
+                )
+                self.create_mqtt_message(response_message)
+
+    def create_mqtt_message(self, response):
+        self.publisher_queue.put(MqttMessage("tasks/"+response.globalTaskUUID+"/responses", response.to_json()))
+
     def stop(self):
         while not self.input_queue.empty():
             self.input_queue.get()
@@ -81,21 +94,31 @@ class TaskService(threading.Thread):
         self.exit_event.set()
         self.logger.info('Task service received shutdown signal...')
 
-    def create_task(self, uuid):
+    def create_task(self, uuid, globalTaskUUID):
         self.logger.debug('TaskService received new task with uuid {}'.format(uuid))
-        new_task = Task(uuid)
+        new_task = Task(uuid, globalTaskUUID)
         self.input_queue.put(new_task)
         return new_task
 
 class Task():
-    def __init__(self, uuid):
+    def __init__(self, uuid, globalTaskUUID):
         self.uuid = uuid
+        self.globalTaskUUID = globalTaskUUID
 
     def to_json(self):
         return json.dumps(self.__dict__)
 
     def to_string(self):
         return str(self.to_json())
-    
 
+class TaskResponse:
+    def __init__(self, global_task_uuid, status, message=None):
+        self.globalTaskUUID = global_task_uuid
+        self.status = status
+        self.message = message
 
+    def to_json(self):
+        return json.dumps(self.__dict__)
+
+    def to_string(self):
+        return str(self.to_json())
