@@ -14,6 +14,8 @@ import requests
 import queue
 import random
 from messaging.mqtt_client import MqttMessage
+import base64
+from cpu_load_generator import load_single_core, load_all_cores, from_profile
 
 logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 
@@ -48,20 +50,21 @@ class TaskService(threading.Thread):
 
             self.logger.info('Received new Task: {}'.format(new_task.to_string()))
             with self.lock:
-                # TODO: Resolve oversimplification
-                currentTaskId = self.taskCount
-                self.taskCount += 1
-                wait_time = random.uniform(0.1, 1.0)
-                self.logger.debug(f"Waiting for {wait_time} seconds to simulate processing the task.")
-                time.sleep(wait_time)
                 # TODO: refactor request
                 # TODO: add progress
                 # TODO: add comment
                 # TODO: add further properties
                 taskId = new_task.uuid
                 globalTaskUUID = new_task.globalTaskUUID
-                payload = new_task.payload
-
+                task_length = int(base64.b64decode(new_task.payload).decode('utf-8'))
+                currentTaskId = self.taskCount
+                self.taskCount += 1
+                # allocate memory
+                x = bytearray(1024*1024*task_length)
+                # generate cpu load and memory time
+                for i in range(task_length):
+                    self.logger.debug(f"Processing task {currentTaskId}: step {i + 1} of {task_length}")
+                    time.sleep(0.001)  # Simulate processing each step with a 1-millisecond delay
                 try:
                     response = requests.put(
                         url=f"{os.getenv('PNA_TASKS_SCHEMA', 'http')}://{os.getenv('PNA_TASKS_HOSTNAME', 'localhost')}:{os.getenv('PNA_TASKS_PORT', '7676')}{os.getenv('PNA_TASKS_BASE_URL', '/api/v1/internal/tasks')}/{taskId}",
@@ -80,7 +83,7 @@ class TaskService(threading.Thread):
                 response_message = TaskResponse(
                     global_task_uuid=globalTaskUUID,
                     status="COMPLETED",
-                    payload=payload
+                    payload=task_length
                 )
                 self.create_mqtt_message(response_message)
 
