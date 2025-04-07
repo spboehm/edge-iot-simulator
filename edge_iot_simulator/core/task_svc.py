@@ -60,7 +60,7 @@ class TaskService(threading.Thread):
                 currentTaskId = self.taskCount
                 self.taskCount += 1
                 # allocate memory
-                x = bytearray(1024*1024*task_length)
+                x = bytearray(1024*task_length)
                 # generate cpu load and memory time
                 for i in range(task_length):
                     self.logger.debug(f"Processing task {currentTaskId}: step {i + 1} of {task_length}")
