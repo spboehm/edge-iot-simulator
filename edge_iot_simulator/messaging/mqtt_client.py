@@ -12,6 +12,7 @@ import time
 import copy
 import ssl
 from settings import *
+import uuid
 
 logging.basicConfig(format='%(asctime)s %(module)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -29,7 +30,7 @@ class MqttClient(threading.Thread):
         self.mqtt_message_counter = 0
 
     def init_mqtt(self):
-        client = mqtt.Client(client_id=os.getenv('MQTT_CLIENT_ID'), clean_session=False)
+        client = mqtt.Client(client_id=str(uuid.uuid4()), clean_session=False)
         if (os.getenv('MQTT_USERNAME') is not None and os.getenv('MQTT_PASSWORD') is not None):
             client.username_pw_set(username=os.getenv('MQTT_USERNAME'), password=os.getenv('MQTT_PASSWORD'))
         if(os.getenv('MQTT_TLS') == 'True'):
