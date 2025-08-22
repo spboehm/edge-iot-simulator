@@ -62,6 +62,11 @@ class TaskService(threading.Thread):
                 # allocate memory
                 #x = bytearray(1024*task_length)
                 # generate cpu load and memory time
+                response = requests.put(
+                        url=f"{os.getenv('PNA_TASKS_SCHEMA', 'http')}://{os.getenv('PNA_TASKS_HOSTNAME', 'localhost')}:{os.getenv('PNA_TASKS_PORT', '7676')}{os.getenv('PNA_TASKS_BASE_URL', '/api/v1/internal/tasks')}/{taskId}",
+                        json={"taskId": taskId, "newTaskStatus": "RUNNING"},
+                        timeout=10
+                    )
                 for i in range(task_length):
                     self.logger.debug(f"Processing task {currentTaskId}: step {i + 1} of {task_length}")
                     time.sleep(0.001)  # Simulate processing each step with a 1-millisecond delay
